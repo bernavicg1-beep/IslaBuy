@@ -20,7 +20,8 @@ import com.islabuy.camiguin.ui.theme.*
 @Composable
 fun HomeScreen(
     selectedIndex: Int,
-    onTabSelected: (Int) -> Unit
+    onTabSelected: (Int) -> Unit,
+    onProductClick: (IslaProduct) -> Unit = {}
 ) {
 
     var searchQuery by remember {
@@ -285,8 +286,7 @@ fun HomeScreen(
                 ProductGrid(
                     products = filteredProducts,
                     onProductClick = { product ->
-                        // Product details navigation
-                        // will be added in the next batch.
+                        onProductClick(product)
                     },
                     modifier = Modifier.weight(1f)
                 )

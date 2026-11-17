@@ -22,6 +22,7 @@ import com.islabuy.camiguin.ui.theme.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartScreen(
+    onBack: () -> Unit = {},
     items: List<CartItem> = emptyList(),
     onRemove: (CartItem) -> Unit = {},
     onQuantityChange: (CartItem, Int) -> Unit = { _, _ -> },

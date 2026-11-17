@@ -18,7 +18,7 @@ import com.islabuy.camiguin.ui.theme.NavyBlue
 import com.islabuy.camiguin.util.Categories
 
 @Composable
-fun CategoriesScreen() {
+fun CategoriesScreen(onBack: () -> Unit = {}) {
     var selectedCategory by remember { mutableStateOf<String?>(null) }
     var products by remember { mutableStateOf<List<Listing>>(emptyList()) }
 

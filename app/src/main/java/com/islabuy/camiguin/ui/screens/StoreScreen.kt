@@ -18,7 +18,7 @@ import com.islabuy.camiguin.data.model.Store
 import com.islabuy.camiguin.ui.theme.NavyBlue
 
 @Composable
-fun StoreScreen(sellerId: String?) {
+fun StoreScreen(sellerId: String? = null, onBack: () -> Unit = {}) {
     var store by remember { mutableStateOf<Store?>(null) }
     var products by remember { mutableStateOf<List<Listing>>(emptyList()) }
     var isFollowing by remember { mutableStateOf(false) }

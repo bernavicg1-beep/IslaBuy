@@ -14,7 +14,7 @@ import com.islabuy.camiguin.ui.components.ThreeDButton
 import kotlinx.coroutines.launch
 
 @Composable
-fun SettingsScreen(navController: NavController) {
+fun SettingsScreen(onBack: () -> Unit = {}) {
     val scope = rememberCoroutineScope()
     val userRepo = remember { UserRepository() }
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -27,7 +27,7 @@ fun SettingsScreen(navController: NavController) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-            IconButton(onClick = { navController.popBackStack() }) {
+            IconButton(onClick = onBack) {
                 Text("←", style = MaterialTheme.typography.titleLarge)
             }
             Text("Settings", style = MaterialTheme.typography.headlineSmall)
