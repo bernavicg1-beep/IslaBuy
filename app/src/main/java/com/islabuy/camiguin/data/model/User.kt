@@ -3,7 +3,9 @@ package com.islabuy.camiguin.data.model
 data class User(
     val uid: String = "",
     val name: String = "",
+    val username: String = "",
     val email: String = "",
+    val address: String = "",
     val phone: String = "",
     val profileImageUrl: String? = null,
     val role: String = "buyer", // buyer, seller, admin

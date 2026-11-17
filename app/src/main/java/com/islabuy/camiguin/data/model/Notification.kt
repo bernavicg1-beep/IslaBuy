@@ -6,9 +6,12 @@ data class AppNotification(
     val type: String = "",
     val title: String = "",
     val body: String = "",
+    val message: String = "",
     val relatedProductId: String? = null,
     val relatedConversationId: String? = null,
+    val relatedId: String? = null,
     val isRead: Boolean = false,
+    val read: Boolean = false,
     val createdAt: Long = 0L
 )
 

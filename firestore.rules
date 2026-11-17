@@ -104,6 +104,34 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // notifications
+    match /notifications/{notificationId} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow delete: if false;
+    }
+
+    // categories
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // user locations
+    match /userLocations/{userId} {
+      allow read: if request.auth != null && (userId == request.auth.uid || isAdmin());
+      allow create, update: if request.auth != null && userId == request.auth.uid;
+      allow delete: if false;
+    }
+
+    // admin logs
+    match /adminLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if false;
+    }
+
     // orders
     match /orders/{orderId} {
       allow read: if request.auth != null &&
