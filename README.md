@@ -12,8 +12,10 @@ Built with Kotlin, Jetpack Compose, Firebase, and Cloudinary.
 - Two-column product grid with pagination and cached images
 - Search by title, filter by category
 - Seller pin on OpenStreetMap, with external navigation to Google Maps or Waze
+- Whole-island map view with a "My location" overlay and a one-tap reset
 - One conversation per product, so chat never mixes listings
 - Delete a message for yourself, or for everyone if you sent it
+- 3D-styled cards and buttons with animated press feedback
 
 **Sellers**
 - Create listings with up to 5 compressed photos
@@ -26,6 +28,9 @@ Built with Kotlin, Jetpack Compose, Firebase, and Cloudinary.
 - Email/password accounts
 - Push notifications on `messages`, `products`, and `announcements` channels
 - Admin panel for moderating listings and sellers, managing categories, and editing the news ticker
+- Profile screen with a signed-out placeholder and a Settings entry point
+- Settings screen: notification preferences per channel and account deletion
+- 3D UI across Home, Map, Profile, Settings, ProductDetail, Sell, and Chat (dark-mode aware)
 
 ## Tech stack
 
@@ -37,6 +42,7 @@ Built with Kotlin, Jetpack Compose, Firebase, and Cloudinary.
 | Images | Cloudinary, unsigned upload preset, client-side compression |
 | Maps | osmdroid / OpenStreetMap |
 | Async | Kotlin coroutines + Flow |
+| 3D UI | `ui/components/ThreeD.kt` — `Modifier.threeD()`, `ThreeDButton`, `ThreeDCard` (animated press, perspective, depth, dark-mode aware) |
 | Build | Gradle 8.4, AGP, JDK 17, `minSdk 24` |
 
 ## Project layout
@@ -48,9 +54,10 @@ app/src/main/java/com/islabuy/camiguin/
 │   ├── repository/     ListingRepository, ChatRepository, UserRepository, CloudinaryRepository
 │   └── preferences/    NotificationPreferences (DataStore)
 ├── ui/
-│   ├── screens/        Home, ProductDetail, Sell, Chat, Messages, Map, Store, Profile, Admin
+│   ├── components/     ThreeD.kt (3D helpers)
+│   ├── screens/        Home, ProductDetail, Sell, Chat, Messages, Map, Store, Profile, Settings, Admin
 │   ├── viewmodel/      HomeViewModel, ChatViewModel, ConversationListViewModel
-│   └── theme/          Colours and typography
+│   └── theme/          Theme.kt (original Camiguin palette), Color, Type, Shape
 ├── notifications/      FCM service
 └── util/               ConversationAccess, ListingValidator, MessageValidator, ProductFilter, Categories
 
@@ -126,6 +133,7 @@ as a single line), `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. See
 |---|---|
 | `IslaBuy-v1.0.0.apk` | 7.8 MB |
 | `IslaBuy-v1.0.0.aab` | 8.0 MB |
+| `IslaBuy-debug.apk` | ~30 MB (latest 3D build) |
 
 ## Known gaps
 
@@ -137,6 +145,7 @@ as a single line), `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. See
   3,684-character base64 string. The `v1.0.0` artifacts were built and signed locally instead.
 - `docs/account-deletion.html` still contains `YOUR_SUPPORT_EMAIL_HERE` and must be filled in
   before submitting to Play Store.
+- Unread badge, hardcoded seller id, and string centralization still pending.
 
 ## Docs
 
