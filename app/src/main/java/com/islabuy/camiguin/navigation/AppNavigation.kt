@@ -8,7 +8,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.islabuy.camiguin.data.repository.ChatRepository
 import com.islabuy.camiguin.data.repository.UserRepository
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import com.islabuy.camiguin.ui.components.IslaProduct
 import com.islabuy.camiguin.ui.theme.NavyBlue
@@ -22,6 +24,8 @@ fun AppNavigation() {
     var selectedTab by remember { mutableIntStateOf(0) }
     var selectedProduct by remember { mutableStateOf<IslaProduct?>(null) }
     val userRepo = remember { UserRepository() }
+    val chatRepo = remember { ChatRepository() }
+    val scope = rememberCoroutineScope()
     val uid = userRepo.currentUser()?.uid ?: ""
 
     fun navigate(screen: String) { backStack.add(screen) }
@@ -96,7 +100,23 @@ fun AppNavigation() {
                     "productDetails" -> ProductDetailsScreen(
                         product = selectedProduct ?: sampleProducts.first(),
                         onBack = { goBack() },
-                        onMessageSeller = { navigate("messages") }
+                        onMessageSeller = {
+                            val prod = selectedProduct ?: sampleProducts.first()
+                            if (uid.isNotBlank()) {
+                                scope.launch {
+                                    runCatching {
+                                        chatRepo.getOrCreateConversation(
+                                            productId = prod.id,
+                                            buyerId = uid,
+                                            sellerId = prod.sellerId.ifBlank { prod.seller },
+                                            productTitle = prod.name,
+                                            productImage = null
+                                        )
+                                    }
+                                }
+                            }
+                            navigate("messages")
+                        }
                     )
                     "messages" -> MessagesScreen()
                     "settings" -> SettingsScreen(onBack = { goBack() })

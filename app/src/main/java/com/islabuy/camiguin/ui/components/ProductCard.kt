@@ -26,7 +26,8 @@ data class IslaProduct(
     val seller: String,
     val imageRes: Int,
     val category: String,
-    val available: Boolean = true
+    val available: Boolean = true,
+    val sellerId: String = ""
 )
 
 val sampleProducts = listOf(

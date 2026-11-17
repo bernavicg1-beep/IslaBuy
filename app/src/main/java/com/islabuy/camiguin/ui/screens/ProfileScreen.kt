@@ -1,5 +1,7 @@
 package com.islabuy.camiguin.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -9,15 +11,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.islabuy.camiguin.data.repository.CloudinaryRepository
 import com.islabuy.camiguin.data.repository.UserRepository
 import com.islabuy.camiguin.ui.theme.*
+import kotlinx.coroutines.launch
 
 @Composable
 fun ProfileScreen(
@@ -29,28 +33,81 @@ fun ProfileScreen(
     onAdmin: () -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val userRepo = remember { UserRepository() }
+    val cloudinary = remember { CloudinaryRepository(context) }
     val user = userRepo.currentUser()
     val profile = remember { mutableStateOf<com.islabuy.camiguin.data.model.User?>(null) }
+    var uploading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
+
     LaunchedEffect(user?.uid) {
         if (user?.uid != null) profile.value = userRepo.getUserProfile(user.uid)
     }
     val p = profile.value
 
+    val pickImage = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null && user?.uid != null) {
+            scope.launch {
+                uploading = true
+                errorMessage = ""
+                try {
+                    val bytes = cloudinary.compressImage(uri)
+                    val result = cloudinary.uploadImage(bytes)
+                    userRepo.updateProfile(user.uid, mapOf("profileImageUrl" to result.secureUrl))
+                        .onSuccess {
+                            profile.value = profile.value?.copy(profileImageUrl = result.secureUrl)
+                        }
+                        .onFailure { errorMessage = it.message ?: "Upload failed" }
+                } catch (e: Exception) {
+                    errorMessage = e.message ?: "Upload failed"
+                } finally {
+                    uploading = false
+                }
+            }
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            AsyncImage(
-                model = p?.profileImageUrl,
-                contentDescription = "Profile",
-                modifier = Modifier.size(72.dp).clip(CircleShape),
-                contentScale = ContentScale.Crop
-            )
+            Box(
+                modifier = Modifier.size(72.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                AsyncImage(
+                    model = p?.profileImageUrl,
+                    contentDescription = "Profile",
+                    modifier = Modifier.size(72.dp).clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+                if (uploading) {
+                    CircularProgressIndicator(modifier = Modifier.size(26.dp), strokeWidth = 2.dp)
+                } else {
+                    IconButton(
+                        onClick = { pickImage.launch("image/*") },
+                        modifier = Modifier.align(Alignment.BottomEnd).size(28.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.PhotoCamera,
+                            contentDescription = "Change profile picture",
+                            tint = NavyBlue,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
             Spacer(Modifier.width(12.dp))
             Column {
                 Text(p?.name ?: user?.displayName ?: "Guest", fontWeight = FontWeight.Bold, color = PrimaryText, fontSize = 18.sp)
                 Text(p?.email ?: user?.email ?: "", color = SecondaryText, fontSize = 13.sp)
                 if (p?.username?.isNotBlank() == true) Text("@${p.username}", color = SecondaryText, fontSize = 12.sp)
             }
+        }
+        if (errorMessage.isNotBlank()) {
+            Text(errorMessage, color = ErrorRed, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
         }
         Spacer(Modifier.height(16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

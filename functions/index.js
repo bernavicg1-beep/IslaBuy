@@ -12,8 +12,8 @@ cloudinary.config({
   api_secret: cloudinaryConfig.api_secret || process.env.CLOUDINARY_API_SECRET
 });
 
-const PRESET = 'camiguin_market_products';
-const FOLDER = 'camiguin_market/products';
+const PRESET = 'islabuy_products';
+const FOLDER = 'islabuy/products';
 
 /**
  * Generate a signed upload signature for Cloudinary.
@@ -171,5 +171,80 @@ exports.deleteUserAccount = functions.https.onCall(async (data, context) => {
   // Delete auth account
   await admin.auth().deleteUser(uid);
 
+  return { success: true };
+});
+
+
+/**
+ * Push a notification to the target user's device when a notification document
+ * is created. The app writes to `notifications/{id}`; this sends the FCM push.
+ */
+exports.sendNotificationPush = functions.firestore
+  .document('notifications/{notificationId}')
+  .onCreate(async (snap, context) => {
+    const data = snap.data() || {};
+    const userId = data.userId;
+    if (!userId) return null;
+
+    const userDoc = await admin.firestore().collection('users').doc(userId).get();
+    const token = userDoc.exists ? userDoc.data().fcmToken : null;
+    if (!token) return null;
+
+    const message = {
+      token: token,
+      notification: {
+        title: data.title || 'IslaBuy',
+        body: data.body || data.message || ''
+      },
+      data: {
+        type: data.type || 'general',
+        notificationId: context.params.notificationId
+      }
+    };
+
+    try {
+      await admin.messaging().send(message);
+    } catch (e) {
+      console.error('FCM send failed:', e);
+    }
+    return null;
+  });
+
+/**
+ * Admin-only: set a user's role (buyer, seller, admin).
+ * The caller must already be an admin (users/{uid}.role == 'admin').
+ */
+exports.setUserRole = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+  }
+  const db = admin.firestore();
+  const caller = await db.collection('users').doc(context.auth.uid).get();
+  if (!caller.exists || caller.data().role !== 'admin') {
+    throw new functions.https.HttpsError('permission-denied', 'Admins only');
+  }
+  const uid = data && data.uid;
+  const role = data && data.role;
+  if (!uid || !['buyer', 'seller', 'admin'].includes(role)) {
+    throw new functions.https.HttpsError('invalid-argument', 'uid and a valid role are required');
+  }
+  await db.collection('users').doc(uid).update({ role: role });
+  return { success: true };
+});
+
+/**
+ * One-time bootstrap: if no admin exists yet, make the caller an admin.
+ * After the first admin exists this always fails with permission-denied.
+ */
+exports.claimFirstAdmin = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+  }
+  const db = admin.firestore();
+  const existing = await db.collection('users').where('role', '==', 'admin').limit(1).get();
+  if (!existing.empty) {
+    throw new functions.https.HttpsError('permission-denied', 'An admin already exists');
+  }
+  await db.collection('users').doc(context.auth.uid).update({ role: 'admin' });
   return { success: true };
 });
