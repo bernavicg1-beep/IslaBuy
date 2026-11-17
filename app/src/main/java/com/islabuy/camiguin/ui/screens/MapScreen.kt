@@ -128,7 +128,9 @@ fun PickupLocationSelector(
                 myLocationOverlay?.disableMyLocation()
                 mv.onDetach()
             },
-            modifier = Modifier.weight(1f)
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp)
         )
 
         // Controls row

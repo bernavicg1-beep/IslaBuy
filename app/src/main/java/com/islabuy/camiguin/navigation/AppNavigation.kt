@@ -78,7 +78,8 @@ fun AppNavigation() {
                             while (backStack.size > 1 && backStack.last() != "home") backStack.removeAt(backStack.lastIndex)
                             if (target != "home") backStack.add(target)
                         },
-                        onProductClick = { p -> selectedProduct = p; navigate("productDetails") }
+                        onProductClick = { p -> selectedProduct = p; navigate("productDetails") },
+                        onNotifications = { navigate("notifications") }
                     )
                     "categories" -> CategoriesScreen(onBack = { goBack() })
                     "sell" -> SellScreen(onBack = { goBack() })
@@ -88,13 +89,16 @@ fun AppNavigation() {
                         onMyProducts = { navigate("sellerDashboard") },
                         onMyOrders = { navigate("orders") },
                         onMyStore = { navigate("store") },
+                        onMessages = { navigate("messages") },
                         onAdmin = { navigate("admin") },
                         onLogout = { userRepo.signOut(); backStack.clear(); backStack.add("welcome") }
                     )
                     "productDetails" -> ProductDetailsScreen(
                         product = selectedProduct ?: sampleProducts.first(),
-                        onBack = { goBack() }
+                        onBack = { goBack() },
+                        onMessageSeller = { navigate("messages") }
                     )
+                    "messages" -> MessagesScreen()
                     "settings" -> SettingsScreen(onBack = { goBack() })
                     "sellerDashboard" -> SellerOrderDashboardScreen(sellerId = uid, onBack = { goBack() })
                     "store" -> StoreScreen(sellerId = uid, onBack = { goBack() })

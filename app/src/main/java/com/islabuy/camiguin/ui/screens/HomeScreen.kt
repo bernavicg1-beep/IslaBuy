@@ -21,7 +21,8 @@ import com.islabuy.camiguin.ui.theme.*
 fun HomeScreen(
     selectedIndex: Int,
     onTabSelected: (Int) -> Unit,
-    onProductClick: (IslaProduct) -> Unit = {}
+    onProductClick: (IslaProduct) -> Unit = {},
+    onNotifications: () -> Unit = {}
 ) {
 
     var searchQuery by remember {
@@ -98,9 +99,7 @@ fun HomeScreen(
                 }
 
                 IconButton(
-                    onClick = {
-                        // Notification screen will be connected later.
-                    }
+                    onClick = onNotifications
                 ) {
                     BadgedBox(
                         badge = {

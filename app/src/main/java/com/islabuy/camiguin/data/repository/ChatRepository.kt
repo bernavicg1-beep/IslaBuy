@@ -36,8 +36,11 @@ class ChatRepository(private val db: FirebaseFirestore = FirebaseFirestore.getIn
             .get().await()
 
         if (!existing.isEmpty) {
-            return existing.documents.first().toObject(Conversation::class.java)!!
-                .copy(conversationId = existing.documents.first().id)
+            val doc = existing.documents.first()
+            val conv = doc.toObject(Conversation::class.java)
+            if (conv != null) {
+                return conv.copy(conversationId = doc.id)
+            }
         }
 
         val newConv = Conversation(

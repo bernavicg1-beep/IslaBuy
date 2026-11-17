@@ -25,6 +25,7 @@ fun ProfileScreen(
     onMyProducts: () -> Unit = {},
     onMyOrders: () -> Unit = {},
     onMyStore: () -> Unit = {},
+    onMessages: () -> Unit = {},
     onAdmin: () -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
@@ -61,6 +62,7 @@ fun ProfileScreen(
         MenuItem(Icons.Default.Store, "My Products", onMyProducts)
         MenuItem(Icons.Default.ShoppingBag, "My Orders", onMyOrders)
         MenuItem(Icons.Default.Storefront, "My Store", onMyStore)
+        MenuItem(Icons.Default.Message, "Messages", onMessages)
         MenuItem(Icons.Default.Settings, "Settings", onSettings)
         if (p?.isAdmin() == true) MenuItem(Icons.Default.AdminPanelSettings, "Admin Panel", onAdmin)
         Spacer(Modifier.height(16.dp))
