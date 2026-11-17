@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -53,7 +54,7 @@ fun IslaBuyNavHost() {
                 NavigationBarItem(
                     selected = false,
                     onClick = { navController.navigate("messages") },
-                    icon = { Icon(Icons.Default.Chat, contentDescription = "Messages") },
+                    icon = { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = "Messages") },
                     label = { Text("Messages") }
                 )
                 NavigationBarItem(
@@ -73,8 +74,9 @@ fun IslaBuyNavHost() {
             composable("profile") { ProfileScreen(navController) }
             composable("seller_dashboard") { SellerDashboardScreen() }
             composable("product/{id}") { backStack ->
-                ProductDetailScreen(backStack.arguments?.getString("id"))
+                ProductDetailScreen(backStack.arguments?.getString("id"), navController)
             }
+            composable("settings") { SettingsScreen(navController) }
             composable("store/{sellerId}") { backStack ->
                 StoreScreen(backStack.arguments?.getString("sellerId"))
             }

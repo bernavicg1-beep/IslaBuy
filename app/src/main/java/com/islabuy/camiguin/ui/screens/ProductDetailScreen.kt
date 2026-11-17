@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.navigation.NavController
 import androidx.compose.ui.text.font.FontWeight
 import com.islabuy.camiguin.R
 import androidx.compose.ui.unit.dp
@@ -18,7 +19,7 @@ import com.islabuy.camiguin.data.model.Listing
 import com.islabuy.camiguin.ui.screens.openExternalNavigation
 
 @Composable
-fun ProductDetailScreen(id: String?) {
+fun ProductDetailScreen(id: String?, navController: NavController? = null) {
     var listing by remember { mutableStateOf<Listing?>(null) }
     var currentImageIndex by remember { mutableStateOf(0) }
     var showReportDialog by remember { mutableStateOf(false) }
@@ -87,7 +88,7 @@ fun ProductDetailScreen(id: String?) {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text("Seller: ${product.sellerName}", style = MaterialTheme.typography.titleSmall)
-                        TextButton(onClick = { /* navigate to store */ }) {
+                        TextButton(onClick = { navController?.navigate("store/${product.sellerId}") }) {
                             Text("Visit Store")
                         }
                     }

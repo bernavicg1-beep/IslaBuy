@@ -8,17 +8,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.islabuy.camiguin.data.model.User
-import com.islabuy.camiguin.data.preferences.NotificationPreferences
 import com.islabuy.camiguin.data.repository.UserRepository
-import kotlinx.coroutines.launch
 
 @Composable
 fun ProfileScreen(navController: NavController) {
-    val scope = rememberCoroutineScope()
     val userRepo = remember { UserRepository() }
     var user by remember { mutableStateOf<User?>(null) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    var statusMessage by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         val uid = userRepo.currentUser()?.uid
@@ -54,94 +49,13 @@ fun ProfileScreen(navController: NavController) {
                     Text("Admin Panel")
                 }
             }
-        }
 
-        // Notification settings
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text("Notification Settings", style = MaterialTheme.typography.titleMedium)
-                Spacer(modifier = Modifier.height(8.dp))
-                val context = androidx.compose.ui.platform.LocalContext.current
-                val prefs = remember { NotificationPreferences(context) }
-                val notifEnabled by prefs.notificationsEnabled.collectAsState(initial = true)
-                val msgSounds by prefs.messageSoundsEnabled.collectAsState(initial = true)
-                val prodUpdates by prefs.productUpdatesEnabled.collectAsState(initial = true)
-                val announcements by prefs.announcementsEnabled.collectAsState(initial = true)
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Enable Notifications")
-                    Switch(checked = notifEnabled, onCheckedChange = { scope.launch { prefs.setNotificationsEnabled(it) } })
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Message Sounds")
-                    Switch(checked = msgSounds, onCheckedChange = { scope.launch { prefs.setMessageSoundsEnabled(it) } })
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Product Updates")
-                    Switch(checked = prodUpdates, onCheckedChange = { scope.launch { prefs.setProductUpdatesEnabled(it) } })
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Announcements")
-                    Switch(checked = announcements, onCheckedChange = { scope.launch { prefs.setAnnouncementsEnabled(it) } })
-                }
+            Button(
+                onClick = { navController.navigate("settings") },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Settings")
             }
         }
-
-        // Account deletion
-        Button(
-            onClick = { showDeleteDialog = true },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-        ) {
-            Text("Delete Account")
-        }
-
-        if (statusMessage.isNotEmpty()) {
-            Text(statusMessage)
-        }
-    }
-
-    if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete Account") },
-            text = { Text("This will permanently delete your account, listings, messages, and associated media. This action cannot be undone.") },
-            confirmButton = {
-                TextButton(onClick = {
-                    showDeleteDialog = false
-                    scope.launch {
-                        val result = userRepo.deleteAccount()
-                        if (result.isSuccess) {
-                            statusMessage = "Account deleted successfully"
-                        } else {
-                            statusMessage = "Failed: ${result.exceptionOrNull()?.message}"
-                        }
-                    }
-                }) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
     }
 }
