@@ -1,10 +1,13 @@
 package com.islabuy.camiguin.navigation
 
-import androidx.compose.runtime.*
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.islabuy.camiguin.data.repository.UserRepository
 import com.islabuy.camiguin.ui.components.IslaProduct
 import com.islabuy.camiguin.ui.components.sampleProducts
@@ -12,55 +15,109 @@ import com.islabuy.camiguin.ui.screens.*
 
 @Composable
 fun AppNavigation() {
-    var currentScreen by remember { mutableStateOf("welcome") }
+    val backStack = remember { mutableStateListOf("welcome") }
+    val currentScreen = backStack.last()
     var selectedTab by remember { mutableIntStateOf(0) }
     var selectedProduct by remember { mutableStateOf<IslaProduct?>(null) }
     val userRepo = remember { UserRepository() }
     val uid = userRepo.currentUser()?.uid ?: ""
 
+    fun navigate(screen: String) { backStack.add(screen) }
+    fun goBack() {
+        if (backStack.size > 1) backStack.removeAt(backStack.lastIndex)
+        else if (currentScreen != "home") backStack.add("home")
+    }
+
+    // System back must never exit the app; pop the stack or go home.
+    BackHandler(enabled = true) { goBack() }
+
+    val isRoot = currentScreen in setOf("welcome", "home")
+
     Surface(modifier = Modifier.fillMaxSize(), color = Color.White) {
-        when (currentScreen) {
-            "welcome" -> WelcomeScreen(
-                onGetStarted = { currentScreen = "home" },
-                onLogin = { currentScreen = "home" }
-            )
-            "home" -> HomeScreen(
-                selectedIndex = selectedTab,
-                onTabSelected = { idx ->
-                    selectedTab = idx
-                    currentScreen = when (idx) {
-                        1 -> "categories"
-                        2 -> "sell"
-                        3 -> "orders"
-                        4 -> "profile"
-                        else -> "home"
+        Column(modifier = Modifier.fillMaxSize()) {
+            if (!isRoot) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { goBack() }) {
+                        Text("←", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     }
-                },
-                onProductClick = { p -> selectedProduct = p; currentScreen = "productDetails" }
-            )
-            "categories" -> CategoriesScreen(onBack = { currentScreen = "home"; selectedTab = 0 })
-            "sell" -> SellScreen(onBack = { currentScreen = "home"; selectedTab = 0 })
-            "orders" -> OrdersHistoryScreen(buyerId = uid, onBack = { currentScreen = "home"; selectedTab = 0 })
-            "profile" -> ProfileScreen(
-                onSettings = { currentScreen = "settings" },
-                onMyProducts = { currentScreen = "sellerDashboard" },
-                onMyOrders = { currentScreen = "orders" },
-                onMyStore = { currentScreen = "store" },
-                onAdmin = { currentScreen = "admin" },
-                onLogout = { userRepo.signOut(); currentScreen = "welcome" }
-            )
-            "productDetails" -> ProductDetailsScreen(
-                product = selectedProduct ?: sampleProducts.first(),
-                onBack = { currentScreen = "home" }
-            )
-            "settings" -> SettingsScreen(onBack = { currentScreen = "profile" })
-            "sellerDashboard" -> SellerOrderDashboardScreen(sellerId = uid, onBack = { currentScreen = "profile" })
-            "store" -> StoreScreen(onBack = { currentScreen = "profile" })
-            "admin" -> AdminPanelScreen(onBack = { currentScreen = "profile" })
-            "notifications" -> NotificationHistoryScreen(userId = uid, onBack = { currentScreen = "home" })
-            "cart" -> CartScreen(onBack = { currentScreen = "home" }, onCheckout = { currentScreen = "checkout" })
-            "checkout" -> CheckoutScreen(onBack = { currentScreen = "cart" }, onConfirm = { _, _, _, _ -> currentScreen = "payment" })
-            "payment" -> PaymentMethodScreen(onBack = { currentScreen = "checkout" })
+                    Text(
+                        text = screenTitle(currentScreen),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                HorizontalDivider()
+            }
+            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                when (currentScreen) {
+                    "welcome" -> WelcomeScreen(
+                        onGetStarted = { navigate("home") },
+                        onLogin = { navigate("home") }
+                    )
+                    "home" -> HomeScreen(
+                        selectedIndex = selectedTab,
+                        onTabSelected = { idx ->
+                            selectedTab = idx
+                            val target = when (idx) {
+                                1 -> "categories"
+                                2 -> "sell"
+                                3 -> "orders"
+                                4 -> "profile"
+                                else -> "home"
+                            }
+                            // Tab switches reset drill-downs but keep a sensible back path.
+                            while (backStack.size > 1 && backStack.last() != "home") backStack.removeAt(backStack.lastIndex)
+                            if (target != "home") backStack.add(target)
+                        },
+                        onProductClick = { p -> selectedProduct = p; navigate("productDetails") }
+                    )
+                    "categories" -> CategoriesScreen(onBack = { goBack() })
+                    "sell" -> SellScreen(onBack = { goBack() })
+                    "orders" -> OrdersHistoryScreen(buyerId = uid, onBack = { goBack() })
+                    "profile" -> ProfileScreen(
+                        onSettings = { navigate("settings") },
+                        onMyProducts = { navigate("sellerDashboard") },
+                        onMyOrders = { navigate("orders") },
+                        onMyStore = { navigate("store") },
+                        onAdmin = { navigate("admin") },
+                        onLogout = { userRepo.signOut(); backStack.clear(); backStack.add("welcome") }
+                    )
+                    "productDetails" -> ProductDetailsScreen(
+                        product = selectedProduct ?: sampleProducts.first(),
+                        onBack = { goBack() }
+                    )
+                    "settings" -> SettingsScreen(onBack = { goBack() })
+                    "sellerDashboard" -> SellerOrderDashboardScreen(sellerId = uid, onBack = { goBack() })
+                    "store" -> StoreScreen(sellerId = uid, onBack = { goBack() })
+                    "admin" -> AdminPanelScreen(onBack = { goBack() })
+                    "notifications" -> NotificationHistoryScreen(userId = uid, onBack = { goBack() })
+                    "cart" -> CartScreen(onBack = { goBack() }, onCheckout = { navigate("checkout") })
+                    "checkout" -> CheckoutScreen(onBack = { goBack() }, onConfirm = { _, _, _, _ -> navigate("payment") })
+                    "payment" -> PaymentMethodScreen(onBack = { goBack() })
+                }
+            }
         }
     }
+}
+
+private fun screenTitle(screen: String): String = when (screen) {
+    "categories" -> "Categories"
+    "sell" -> "Sell"
+    "orders" -> "Orders"
+    "profile" -> "Profile"
+    "productDetails" -> "Product Details"
+    "settings" -> "Settings"
+    "sellerDashboard" -> "Seller Dashboard"
+    "store" -> "My Store"
+    "admin" -> "Admin Panel"
+    "notifications" -> "Notifications"
+    "cart" -> "Cart"
+    "checkout" -> "Checkout"
+    "payment" -> "Payment"
+    else -> ""
 }
