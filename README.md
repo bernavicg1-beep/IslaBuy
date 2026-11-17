@@ -145,7 +145,7 @@ as a single line), `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. See
   3,684-character base64 string. The `v1.0.0` artifacts were built and signed locally instead.
 - `docs/account-deletion.html` still contains `YOUR_SUPPORT_EMAIL_HERE` and must be filled in
   before submitting to Play Store.
-- Unread badge, hardcoded seller id, and string centralization still pending.
+- String centralization still pending.
 
 ## Docs
 
