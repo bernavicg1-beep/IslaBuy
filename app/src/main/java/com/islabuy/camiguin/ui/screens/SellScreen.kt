@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.islabuy.camiguin.data.model.Listing
 import com.islabuy.camiguin.data.repository.CloudinaryRepository
+import com.islabuy.camiguin.data.repository.UserRepository
 import com.islabuy.camiguin.ui.components.ThreeDButton
 import com.islabuy.camiguin.util.Categories
 import kotlinx.coroutines.launch
@@ -23,6 +24,9 @@ import java.util.UUID
 fun SellScreen() {
     val context = androidx.compose.ui.platform.LocalContext.current
     val scope = rememberCoroutineScope()
+    val userRepo = remember { UserRepository() }
+    val sellerId = userRepo.currentUser()?.uid ?: ""
+    val sellerName = userRepo.currentUser()?.displayName ?: userRepo.currentUser()?.email ?: "Seller"
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var price by remember { mutableStateOf("") }
@@ -214,8 +218,8 @@ fun SellScreen() {
                         val publicIds = uploadResults.map { it.publicId }
 
                         Listing(
-                            sellerId = "current_user",
-                            sellerName = "Seller",
+                            sellerId = sellerId,
+                            sellerName = sellerName,
                             title = title,
                             description = description,
                             price = price.toDoubleOrNull() ?: 0.0,

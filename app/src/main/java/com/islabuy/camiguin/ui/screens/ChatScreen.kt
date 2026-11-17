@@ -17,19 +17,30 @@ import androidx.compose.ui.unit.dp
 import com.islabuy.camiguin.R
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.islabuy.camiguin.data.model.Message
+import com.islabuy.camiguin.data.repository.UserRepository
 import com.islabuy.camiguin.ui.viewmodel.ChatViewModel
 
 @Composable
 fun ChatScreen(conversationId: String?) {
     val viewModel: ChatViewModel = viewModel()
     val messages by viewModel.messages.collectAsState()
+    val conversation by viewModel.conversation.collectAsState()
     val isSending by viewModel.isSending.collectAsState()
+    val userRepo = remember { UserRepository() }
+    val currentUid = userRepo.currentUser()?.uid ?: ""
     var messageText by remember { mutableStateOf("") }
     var deleteTarget by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(conversationId) {
-        conversationId?.let { viewModel.loadMessages(it) }
+        conversationId?.let {
+            viewModel.loadMessages(it)
+            if (currentUid.isNotBlank()) viewModel.markAsSeen(currentUid)
+        }
     }
+
+    val otherParticipantId = conversation?.let { c ->
+        if (currentUid == c.buyerId) c.sellerId else c.buyerId
+    } ?: ""
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Product header
@@ -48,7 +59,7 @@ fun ChatScreen(conversationId: String?) {
             items(messages, key = { it.messageId }) { msg ->
                 MessageBubble(
                     message = msg,
-                    isOwn = msg.senderId == "current_user",
+                    isOwn = msg.senderId == currentUid,
                     onLongPress = { deleteTarget = msg.messageId }
                 )
             }
@@ -62,13 +73,13 @@ fun ChatScreen(conversationId: String?) {
                 text = { Text("Choose deletion option:") },
                 confirmButton = {
                     TextButton(onClick = {
-                        viewModel.deleteForMe(msgId, "current_user")
+                        viewModel.deleteForMe(msgId, currentUid)
                         deleteTarget = null
                     }) { Text(stringResource(R.string.delete_for_me)) }
                 },
                 dismissButton = {
                     TextButton(onClick = {
-                        viewModel.deleteForEveryone(msgId, "current_user")
+                        viewModel.deleteForEveryone(msgId, currentUid)
                         deleteTarget = null
                     }) { Text(stringResource(R.string.delete_for_everyone)) }
                 }
@@ -93,7 +104,7 @@ fun ChatScreen(conversationId: String?) {
             IconButton(
                 onClick = {
                     if (messageText.isNotBlank()) {
-                        viewModel.sendMessage(messageText, "current_user", "seller_id")
+                        viewModel.sendMessage(messageText, currentUid, otherParticipantId)
                         messageText = ""
                     }
                 },

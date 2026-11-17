@@ -3,6 +3,7 @@ package com.islabuy.camiguin.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.FirebaseFirestore
+import com.islabuy.camiguin.data.model.Conversation
 import com.islabuy.camiguin.data.model.Message
 import com.islabuy.camiguin.data.repository.ChatRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +18,9 @@ class ChatViewModel(
     private val _messages = MutableStateFlow<List<Message>>(emptyList())
     val messages: StateFlow<List<Message>> = _messages.asStateFlow()
 
+    private val _conversation = MutableStateFlow<Conversation?>(null)
+    val conversation: StateFlow<Conversation?> = _conversation.asStateFlow()
+
     private val _isSending = MutableStateFlow(false)
     val isSending: StateFlow<Boolean> = _isSending.asStateFlow()
 
@@ -24,6 +28,12 @@ class ChatViewModel(
 
     fun loadMessages(convId: String) {
         conversationId = convId
+        viewModelScope.launch {
+            try {
+                val snap = repository.getConversation(convId)
+                _conversation.value = snap
+            } catch (_: Exception) { }
+        }
         viewModelScope.launch {
             repository.getMessages(convId).addSnapshotListener { snapshot, error ->
                 if (error != null) return@addSnapshotListener

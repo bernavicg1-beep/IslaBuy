@@ -48,6 +48,7 @@ fun MessagesScreen(navController: NavController? = null) {
                 items(conversations, key = { it.conversationId }) { conv ->
                     ConversationItem(
                         conversation = conv,
+                        currentUid = userRepo.currentUser()?.uid ?: "",
                         onClick = { navController?.navigate("chat/${conv.conversationId}") }
                     )
                     Divider()
@@ -58,8 +59,8 @@ fun MessagesScreen(navController: NavController? = null) {
 }
 
 @Composable
-private fun ConversationItem(conversation: Conversation, onClick: () -> Unit) {
-    val unread = conversation.unreadCounts.values.sum()
+private fun ConversationItem(conversation: Conversation, currentUid: String, onClick: () -> Unit) {
+    val unread = conversation.unreadCounts[currentUid] ?: 0
 
     Card(
         onClick = onClick,

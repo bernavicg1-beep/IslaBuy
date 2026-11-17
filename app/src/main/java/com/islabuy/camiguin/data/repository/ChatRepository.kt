@@ -1,5 +1,6 @@
 package com.islabuy.camiguin.data.repository
 
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.QuerySnapshot
@@ -95,17 +96,22 @@ class ChatRepository(private val db: FirebaseFirestore = FirebaseFirestore.getIn
         }
     }
 
+    suspend fun getConversation(conversationId: String): Conversation? =
+        conversations.document(conversationId).get().await()
+            .toObject(Conversation::class.java)?.copy(conversationId = conversationId)
+
     fun getMessages(conversationId: String) = messages
         .whereEqualTo("conversationId", conversationId)
         .orderBy("createdAt", Query.Direction.ASCENDING)
 
     suspend fun sendMessage(message: Message): Result<String> = runCatching {
         val doc = messages.add(message).await()
-        // Update conversation last message
+        // Update conversation last message + bump receiver unread count
         conversations.document(message.conversationId).update(
             mapOf(
                 "lastMessage" to message.text,
-                "lastMessageAt" to message.createdAt
+                "lastMessageAt" to message.createdAt,
+                "unreadCounts.${message.receiverId}" to FieldValue.increment(1)
             )
         ).await()
         doc.id

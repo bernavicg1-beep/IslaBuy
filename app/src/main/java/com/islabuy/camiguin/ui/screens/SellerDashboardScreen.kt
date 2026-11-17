@@ -13,12 +13,15 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.islabuy.camiguin.data.model.Listing
 import com.islabuy.camiguin.data.repository.ListingRepository
+import com.islabuy.camiguin.data.repository.UserRepository
 import kotlinx.coroutines.launch
 
 @Composable
 fun SellerDashboardScreen() {
     val scope = rememberCoroutineScope()
     val repository = remember { ListingRepository() }
+    val userRepo = remember { UserRepository() }
+    val sellerId = userRepo.currentUser()?.uid ?: ""
     var listings by remember { mutableStateOf<List<Listing>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var selectedTab by remember { mutableStateOf(0) }
@@ -27,7 +30,7 @@ fun SellerDashboardScreen() {
     LaunchedEffect(Unit) {
         scope.launch {
             try {
-                listings = repository.getListingsBySeller("current_seller_id")
+                listings = repository.getListingsBySeller(sellerId)
             } catch (e: Exception) {
                 // Handle error
             } finally {
@@ -72,13 +75,13 @@ fun SellerDashboardScreen() {
                         onMarkSold = {
                             scope.launch {
                                 repository.markAsSold(listing.id)
-                                listings = repository.getListingsBySeller("current_seller_id")
+                                listings = repository.getListingsBySeller(sellerId)
                             }
                         },
                         onDelete = {
                             scope.launch {
                                 repository.deleteListing(listing.id)
-                                listings = repository.getListingsBySeller("current_seller_id")
+                                listings = repository.getListingsBySeller(sellerId)
                             }
                         }
                     )
