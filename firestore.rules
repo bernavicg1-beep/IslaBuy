@@ -103,5 +103,19 @@ service cloud.firestore {
       allow create: if isAdmin();
       allow update, delete: if false;
     }
+
+    // orders
+    match /orders/{orderId} {
+      allow read: if request.auth != null &&
+        (resource.data.buyerId == request.auth.uid ||
+         resource.data.sellerId == request.auth.uid || isAdmin());
+      allow create: if request.auth != null &&
+        request.resource.data.buyerId == request.auth.uid;
+      allow update: if request.auth != null &&
+        (resource.data.sellerId == request.auth.uid || isAdmin()) &&
+        // buyers cannot approve their own GCash payments
+        !(request.resource.data.paymentStatus == 'VERIFIED' && resource.data.buyerId == request.auth.uid);
+      allow delete: if false;
+    }
   }
 }
