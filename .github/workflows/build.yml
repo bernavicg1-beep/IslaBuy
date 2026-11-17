@@ -61,17 +61,26 @@ jobs:
             echo "keystore_ok=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if ! printf '%s' "$KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > app/release.keystore 2>/dev/null; then
+          printf '%s' "$KEYSTORE_BASE64" | tr -d '[:space:]' > /tmp/ks.b64
+          echo "Diagnostics (no secret values printed):"
+          echo "  base64 length: $(wc -c < /tmp/ks.b64) (expected 3684)"
+          echo "  starts with MIIKxgIBAzCCCnAG: $(head -c 18 /tmp/ks.b64 | grep -q '^MIIKxgIBAzCCCnAG' && echo yes || echo no)"
+          echo "  ends with jMKAdSC8/QICJxA=: $(tail -c 18 /tmp/ks.b64 | grep -q 'jMKAdSC8/QICJxA=$' && echo yes || echo no)"
+          if ! base64 -d /tmp/ks.b64 > app/release.keystore 2>/tmp/b64.err; then
             echo "::warning::KEYSTORE_BASE64 is not valid base64. Skipping signed release build. Paste the whole content of islabuy-release.keystore.base64 (one line, 3684 characters, starting with MIIKxgIBAzCCCnAG)."
+            echo "  base64 error: $(cat /tmp/b64.err)"
             echo "keystore_ok=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if ! keytool -list -keystore app/release.keystore -storepass "$KEYSTORE_PASSWORD" > /dev/null 2>&1; then
+          echo "  decoded keystore size: $(wc -c < app/release.keystore) (expected 2762)"
+          if ! keytool -list -keystore app/release.keystore -storepass "$KEYSTORE_PASSWORD" > /tmp/kt.out 2>/tmp/kt.err; then
             echo "::warning::The decoded keystore does not open with KEYSTORE_PASSWORD. Skipping signed release build. Update the KEYSTORE_BASE64 / KEYSTORE_PASSWORD secrets."
+            echo "  keytool error: $(cat /tmp/kt.err)"
             echo "keystore_ok=false" >> "$GITHUB_OUTPUT"
             rm -f app/release.keystore
             exit 0
           fi
+          echo "  alias in keystore: $(keytool -list -keystore app/release.keystore -storepass "$KEYSTORE_PASSWORD" 2>/dev/null | grep -i privatekeyentry | head -1 | cut -d, -f1)"
           echo "keystore_ok=true" >> "$GITHUB_OUTPUT"
           echo "Keystore decoded and unlocked."
 
