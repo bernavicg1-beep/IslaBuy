@@ -13,6 +13,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
 import androidx.compose.ui.text.font.FontWeight
 import com.islabuy.camiguin.R
+import com.islabuy.camiguin.ui.components.ThreeDCard
+import com.islabuy.camiguin.ui.components.ThreeDButton
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.islabuy.camiguin.data.model.Listing
@@ -85,7 +87,7 @@ fun ProductDetailScreen(id: String?, navController: NavController? = null) {
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // Seller info
-                Card(modifier = Modifier.fillMaxWidth()) {
+                ThreeDCard(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text("Seller: ${product.sellerName}", style = MaterialTheme.typography.titleSmall)
                         TextButton(onClick = { navController?.navigate("store/${product.sellerId}") }) {
@@ -109,14 +111,13 @@ fun ProductDetailScreen(id: String?, navController: NavController? = null) {
                         )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    Button(
+                    ThreeDButton(
+                        text = stringResource(R.string.get_directions),
                         onClick = {
                             // openExternalNavigation needs context - handled by caller
                         },
                         modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(stringResource(R.string.get_directions))
-                    }
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -126,18 +127,17 @@ fun ProductDetailScreen(id: String?, navController: NavController? = null) {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Button(
+                    ThreeDButton(
+                        text = "Contact Seller",
                         onClick = { /* navigate to chat */ },
                         modifier = Modifier.weight(1f)
-                    ) {
-                        Text("Contact Seller")
-                    }
-                    OutlinedButton(
+                    )
+                    ThreeDButton(
+                        text = "Report",
                         onClick = { showReportDialog = true },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("Report")
-                    }
+                        modifier = Modifier.weight(1f),
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
                 }
             }
         }

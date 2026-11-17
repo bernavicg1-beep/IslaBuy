@@ -9,6 +9,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.islabuy.camiguin.data.model.User
 import com.islabuy.camiguin.data.repository.UserRepository
+import com.islabuy.camiguin.ui.components.ThreeDCard
+import com.islabuy.camiguin.ui.components.ThreeDButton
 
 @Composable
 fun ProfileScreen(navController: NavController) {
@@ -31,7 +33,7 @@ fun ProfileScreen(navController: NavController) {
         Text("Profile", style = MaterialTheme.typography.headlineSmall)
 
         user?.let { u ->
-            Card(modifier = Modifier.fillMaxWidth()) {
+            ThreeDCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("Name: ${u.name}", style = MaterialTheme.typography.bodyLarge)
                     Text("Email: ${u.email}", style = MaterialTheme.typography.bodyMedium)
@@ -42,15 +44,14 @@ fun ProfileScreen(navController: NavController) {
 
             // Admin Panel access (only for admins)
             if (u.isAdmin()) {
-                Button(
+                ThreeDButton(
+                    text = "Admin Panel",
                     onClick = { navController.navigate("admin") },
                     modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Admin Panel")
-                }
+                )
             }
         } ?: run {
-            Card(modifier = Modifier.fillMaxWidth()) {
+            ThreeDCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("Not signed in", style = MaterialTheme.typography.bodyLarge)
                     Text("Sign in to view your profile.", style = MaterialTheme.typography.bodyMedium)
@@ -58,11 +59,10 @@ fun ProfileScreen(navController: NavController) {
             }
         }
 
-        Button(
+        ThreeDButton(
+            text = "Settings",
             onClick = { navController.navigate("settings") },
             modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Settings")
-        }
+        )
     }
 }

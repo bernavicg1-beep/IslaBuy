@@ -9,6 +9,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.islabuy.camiguin.data.preferences.NotificationPreferences
 import com.islabuy.camiguin.data.repository.UserRepository
+import com.islabuy.camiguin.ui.components.ThreeDCard
+import com.islabuy.camiguin.ui.components.ThreeDButton
 import kotlinx.coroutines.launch
 
 @Composable
@@ -32,7 +34,7 @@ fun SettingsScreen(navController: NavController) {
         }
 
         // Notification settings
-        Card(modifier = Modifier.fillMaxWidth()) {
+        ThreeDCard(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("Notification Settings", style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(8.dp))
@@ -63,17 +65,16 @@ fun SettingsScreen(navController: NavController) {
         }
 
         // Account deletion
-        Card(modifier = Modifier.fillMaxWidth()) {
+        ThreeDCard(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("Account", style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(8.dp))
-                Button(
+                ThreeDButton(
+                    text = "Delete Account",
                     onClick = { showDeleteDialog = true },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text("Delete Account")
-                }
+                    containerColor = MaterialTheme.colorScheme.error
+                )
             }
         }
 

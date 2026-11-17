@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -132,7 +133,9 @@ private fun MessageBubble(message: Message, isOwn: Boolean, onLongPress: () -> U
             Surface(
                 color = bgColor,
                 shape = MaterialTheme.shapes.medium,
-                modifier = Modifier.padding(vertical = 2.dp)
+                modifier = Modifier
+                    .padding(vertical = 2.dp)
+                    .shadow(4.dp, MaterialTheme.shapes.medium)
             ) {
                 Column(modifier = Modifier.padding(8.dp)) {
                     Text(text = message.text, style = MaterialTheme.typography.bodyMedium)

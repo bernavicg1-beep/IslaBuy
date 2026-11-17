@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.islabuy.camiguin.data.model.Listing
 import com.islabuy.camiguin.data.repository.CloudinaryRepository
+import com.islabuy.camiguin.ui.components.ThreeDButton
 import com.islabuy.camiguin.util.Categories
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -148,9 +149,10 @@ fun SellScreen() {
         // Image picker
         Text("Photos (${imageUris.size}/${CloudinaryRepository.MAX_PHOTOS})")
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { imagePicker.launch("image/*") }) {
-                Text("Add Photos")
-            }
+            ThreeDButton(
+                text = "Add Photos",
+                onClick = { imagePicker.launch("image/*") }
+            )
             if (imageUris.isNotEmpty()) {
                 TextButton(onClick = { imageUris = emptyList() }) {
                     Text("Clear")
@@ -163,9 +165,10 @@ fun SellScreen() {
         if (pickupLat != null && pickupLng != null) {
             Text("Lat: $pickupLat, Lng: $pickupLng", style = MaterialTheme.typography.bodySmall)
         }
-        Button(onClick = { showMap = true }) {
-            Text(if (pickupLat == null) "Select Pickup Location" else "Change Location")
-        }
+        ThreeDButton(
+            text = if (pickupLat == null) "Select Pickup Location" else "Change Location",
+            onClick = { showMap = true }
+        )
 
         // Status message
         if (statusMessage.isNotEmpty()) {
@@ -173,20 +176,21 @@ fun SellScreen() {
         }
 
         // Upload button
-        Button(
+        ThreeDButton(
+            text = "Upload Listing",
             onClick = {
                 // Validate
                 if (title.isBlank() || price.isBlank()) {
                     statusMessage = "Title and price are required"
-                    return@Button
+                    return@ThreeDButton
                 }
                 if (isPerishable && (expirationDate.isBlank() || expirationTime.isBlank())) {
                     statusMessage = "Expiration date and time are required for perishable products"
-                    return@Button
+                    return@ThreeDButton
                 }
                 if (pickupLat == null || pickupLng == null) {
                     statusMessage = "Pickup location is required"
-                    return@Button
+                    return@ThreeDButton
                 }
                 isUploading = true
                 statusMessage = "Uploading..."
@@ -209,7 +213,7 @@ fun SellScreen() {
                         val imageUrls = uploadResults.map { it.secureUrl }
                         val publicIds = uploadResults.map { it.publicId }
 
-                        val listing = Listing(
+                        Listing(
                             sellerId = "current_user",
                             sellerName = "Seller",
                             title = title,
