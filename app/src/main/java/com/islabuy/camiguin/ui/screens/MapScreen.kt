@@ -24,6 +24,7 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+import com.islabuy.camiguin.ui.components.ThreeDButton
 
 // Camiguin island centre and a zoom that frames the whole island (~24 x 6 km).
 private const val CAMIGUIN_LAT = 9.1731
@@ -137,7 +138,8 @@ fun PickupLocationSelector(
                 .padding(horizontal = 8.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            OutlinedButton(
+            com.islabuy.camiguin.ui.components.ThreeDButton(
+                text = if (hasLocationPermission) "My location" else "Enable location",
                 onClick = {
                     if (hasLocationPermission) {
                         myLocationOverlay?.enableMyLocation()
@@ -147,16 +149,17 @@ fun PickupLocationSelector(
                     } else {
                         permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                     }
-                }
-            ) {
-                Text(if (hasLocationPermission) "My location" else "Enable location")
-            }
-            OutlinedButton(onClick = {
-                mapView?.controller?.setZoom(ISLAND_ZOOM)
-                mapView?.controller?.setCenter(GeoPoint(CAMIGUIN_LAT, CAMIGUIN_LNG))
-            }) {
-                Text("Whole island")
-            }
+                },
+                modifier = Modifier
+            )
+            ThreeDButton(
+                text = "Whole island",
+                onClick = {
+                    mapView?.controller?.setZoom(ISLAND_ZOOM)
+                    mapView?.controller?.setCenter(GeoPoint(CAMIGUIN_LAT, CAMIGUIN_LNG))
+                },
+                modifier = Modifier
+            )
         }
 
         // OSM Attribution (required)

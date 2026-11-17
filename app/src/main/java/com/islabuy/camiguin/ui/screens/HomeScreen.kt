@@ -8,13 +8,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.islabuy.camiguin.R
+import com.islabuy.camiguin.ui.components.ThreeDButton
+import com.islabuy.camiguin.ui.components.ThreeDCard
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.islabuy.camiguin.data.model.Listing
@@ -70,12 +76,11 @@ fun HomeScreen(padding: PaddingValues) {
                             CircularProgressIndicator(modifier = Modifier.size(24.dp))
                         }
                     } else {
-                        Button(
+                        ThreeDButton(
+                            text = "Load More",
                             onClick = { viewModel.loadProducts() },
                             modifier = Modifier.fillMaxWidth().padding(8.dp)
-                        ) {
-                            Text("Load More")
-                        }
+                        )
                     }
                 }
             }
@@ -83,18 +88,27 @@ fun HomeScreen(padding: PaddingValues) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun NewsTicker(messages: List<String>) {
     val text = messages.joinToString("   •   ")
-    Surface(color = MaterialTheme.colorScheme.primaryContainer) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(8.dp, androidx.compose.foundation.shape.RoundedCornerShape(12.dp)),
+        color = MaterialTheme.colorScheme.primaryContainer,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+        tonalElevation = 6.dp
+    ) {
         Text(
             text = text,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .padding(horizontal = 12.dp, vertical = 10.dp)
+                .basicMarquee(),
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.bodyMedium
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold
         )
     }
 }
@@ -113,9 +127,8 @@ fun SearchBar(query: String, onQueryChange: (String) -> Unit, modifier: Modifier
 
 @Composable
 fun ProductCard(product: Listing) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ThreeDCard(
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column {
             AsyncImage(
