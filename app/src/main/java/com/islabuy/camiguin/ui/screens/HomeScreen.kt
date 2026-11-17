@@ -1,164 +1,295 @@
 package com.islabuy.camiguin.ui.screens
 
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.*
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.*
 import com.islabuy.camiguin.R
-import com.islabuy.camiguin.ui.components.ThreeDButton
-import com.islabuy.camiguin.ui.components.ThreeDCard
-import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
-import com.islabuy.camiguin.data.model.Listing
-import com.islabuy.camiguin.ui.viewmodel.HomeViewModel
+import com.islabuy.camiguin.ui.components.*
+import com.islabuy.camiguin.ui.theme.*
 
 @Composable
-fun HomeScreen(padding: PaddingValues) {
-    val viewModel: HomeViewModel = viewModel()
-    val products by viewModel.products.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
+fun HomeScreen(
+    selectedIndex: Int,
+    onTabSelected: (Int) -> Unit
+) {
 
-    val welcomeText = stringResource(R.string.welcome_ticker)
-    var announcements by remember { mutableStateOf(listOf(welcomeText)) }
+    var searchQuery by remember {
+        mutableStateOf("")
+    }
 
-    Column(modifier = Modifier.padding(padding)) {
-        // Running news ticker
-        NewsTicker(messages = announcements)
+    var selectedCategory by remember {
+        mutableStateOf("All")
+    }
 
-        // Search bar
-        SearchBar(
-            query = searchQuery,
-            onQueryChange = { viewModel.search(it) },
-            modifier = Modifier.fillMaxWidth().padding(8.dp)
-        )
+    val filteredProducts = sampleProducts.filter { product ->
 
-        // Product grid - 2 columns, paginated
-        if (isLoading && products.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        } else if (products.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No products available yet. Be the first to sell!")
-            }
-        } else {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                contentPadding = PaddingValues(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+        val matchesSearch =
+            product.name.contains(
+                searchQuery,
+                ignoreCase = true
+            ) || product.seller.contains(
+                searchQuery,
+                ignoreCase = true
+            )
+
+        val matchesCategory =
+            selectedCategory == "All" ||
+            product.category == selectedCategory
+
+        matchesSearch && matchesCategory
+    }
+
+    Scaffold(
+        containerColor = ScreenBackground,
+
+        bottomBar = {
+            IslaBuyBottomNavigation(
+                selectedIndex = selectedIndex,
+                onSelect = onTabSelected
+            )
+        }
+    ) { innerPadding ->
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+
+            // TOP NAVIGATION HEADER
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .background(NavyBlue)
+                    .padding(
+                        horizontal = 18.dp,
+                        vertical = 15.dp
+                    ),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                items(products, key = { it.id }) { product ->
-                    ProductCard(product = product)
+
+                Column {
+                    Text(
+                        text = "IslaBuy",
+                        color = Color.White,
+                        fontSize = 23.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+
+                    Text(
+                        text = "Camiguin Edition",
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 11.sp
+                    )
                 }
-                // Load more on scroll
-                item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
-                    if (isLoading) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+
+                IconButton(
+                    onClick = {
+                        // Notification screen will be connected later.
+                    }
+                ) {
+                    BadgedBox(
+                        badge = {
+                            Badge(
+                                containerColor = ErrorRed
+                            ) {
+                                Text("3")
+                            }
                         }
-                    } else {
-                        ThreeDButton(
-                            text = "Load More",
-                            onClick = { viewModel.loadProducts() },
-                            modifier = Modifier.fillMaxWidth().padding(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Notifications,
+                            contentDescription = "Notifications",
+                            tint = Color.White,
+                            modifier = Modifier.size(27.dp)
                         )
                     }
                 }
             }
-        }
-    }
-}
 
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun NewsTicker(messages: List<String>) {
-    // Repeat so the text always overflows and keeps scrolling.
-    val text = (messages + messages + messages).joinToString("   •   ")
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(8.dp, androidx.compose.foundation.shape.RoundedCornerShape(12.dp)),
-        color = MaterialTheme.colorScheme.primaryContainer,
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
-        tonalElevation = 6.dp
-    ) {
-        Text(
-            text = text,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp)
-                .basicMarquee(iterations = Int.MAX_VALUE, initialDelayMillis = 0),
-            maxLines = 1,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold
-        )
-    }
-}
+            // SEARCH BAR
 
-@Composable
-fun SearchBar(query: String, onQueryChange: (String) -> Unit, modifier: Modifier = Modifier) {
-    OutlinedTextField(
-        value = query,
-        onValueChange = onQueryChange,
-        modifier = modifier,
-        placeholder = { Text("Search products...") },
-        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
-        singleLine = true
-    )
-}
-
-@Composable
-fun ProductCard(product: Listing) {
-    ThreeDCard(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column {
-            AsyncImage(
-                model = product.imageUrls.firstOrNull(),
-                contentDescription = product.title,
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(150.dp),
-                contentScale = ContentScale.Crop
-            )
-            Column(modifier = Modifier.padding(8.dp)) {
-                Text(
-                    text = product.title,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    .background(NavyBlue)
+                    .padding(
+                        start = 15.dp,
+                        end = 15.dp,
+                        bottom = 15.dp
+                    )
+            ) {
+                IslaBuySearchBar(
+                    query = searchQuery,
+                    onQueryChange = {
+                        searchQuery = it
+                    }
                 )
-                Text(
-                    text = "₱${product.price}",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary
+            }
+
+            // MAIN CONTENT
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp)
+            ) {
+
+                // CAMIGUIN PROMOTIONAL BANNER
+
+                Image(
+                    painter = painterResource(
+                        R.drawable.camiguin_banner
+                    ),
+                    contentDescription = "Discover Camiguin",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 15.dp)
+                        .height(132.dp)
+                        .background(
+                            NavyBlue,
+                            RoundedCornerShape(18.dp)
+                        ),
+                    contentScale = ContentScale.Crop
                 )
-                if (product.isPerishable) {
+
+                Spacer(
+                    modifier = Modifier.height(17.dp)
+                )
+
+                // CATEGORY TITLE
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
                     Text(
-                        text = "Expires: ${product.expirationDate} ${product.expirationTime}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.error
+                        "Categories",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PrimaryText
+                    )
+
+                    TextButton(
+                        onClick = {
+                            onTabSelected(1)
+                        }
+                    ) {
+                        Text(
+                            "See All →",
+                            color = NavyBlue,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                // CATEGORY CARDS
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(
+                            rememberScrollState()
+                        )
+                        .padding(
+                            horizontal = 14.dp,
+                            vertical = 5.dp
+                        ),
+                    horizontalArrangement = Arrangement.spacedBy(9.dp)
+                ) {
+
+                    islaBuyCategories.forEach { category ->
+
+                        CategoryCard(
+                            category = category,
+                            selected =
+                                selectedCategory == category.name,
+                            onClick = {
+                                selectedCategory = category.name
+                            }
+                        )
+                    }
+                }
+
+                Spacer(
+                    modifier = Modifier.height(12.dp)
+                )
+
+                // FEATURED PRODUCTS TITLE
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+                    Text(
+                        "Featured Products",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PrimaryText
+                    )
+
+                    TextButton(
+                        onClick = {
+                            selectedCategory = "All"
+                            searchQuery = ""
+                        }
+                    ) {
+                        Text(
+                            "See All →",
+                            color = NavyBlue,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            // TWO-COLUMN PRODUCT GRID
+
+            if (filteredProducts.isEmpty()) {
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(25.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "No products found.",
+                        color = SecondaryText
                     )
                 }
+
+            } else {
+
+                ProductGrid(
+                    products = filteredProducts,
+                    onProductClick = { product ->
+                        // Product details navigation
+                        // will be added in the next batch.
+                    },
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
     }

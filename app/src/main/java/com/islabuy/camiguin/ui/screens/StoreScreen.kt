@@ -1,6 +1,7 @@
 package com.islabuy.camiguin.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -9,10 +10,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.islabuy.camiguin.data.model.Listing
 import com.islabuy.camiguin.data.model.Store
+import com.islabuy.camiguin.ui.theme.NavyBlue
 
 @Composable
 fun StoreScreen(sellerId: String?) {
@@ -95,7 +98,15 @@ fun StoreScreen(sellerId: String?) {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(products, key = { it.id }) { product ->
-                    ProductCard(product = product)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Text(product.title, fontWeight = FontWeight.SemiBold)
+                            Text("₱${"%,.2f".format(product.price)}", color = NavyBlue)
+                        }
+                    }
                 }
             }
         }

@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IslaBuy — Architecture Review: Deepening Opportunities</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'loose' });
+</script>
+<style>
+  html { scroll-behavior: smooth; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  /* depth diagram primitives */
+  .iface { border: 2px solid #0f766e; background: #ccfbf1; border-radius: 6px; }
+  .body  { border: 2px solid #94a3b8; background: #f1f5f9; border-radius: 6px; }
+  .iface-bad { border: 2px dashed #b91c1c; background: #fee2e2; border-radius: 6px; }
+  .body-bad  { border: 2px dashed #cbd5e1; background: #f8fafc; border-radius: 6px; }
+  .depth-label { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #64748b; }
+</style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased">
+
+<header class="bg-gradient-to-br from-teal-800 via-teal-700 to-emerald-700 text-white">
+  <div class="max-w-5xl mx-auto px-6 py-14">
+    <p class="text-teal-200 text-xs tracking-[0.2em] uppercase mb-3">IslaBuy — Camiguin Edition · Architecture Review</p>
+    <h1 class="text-4xl md:text-5xl font-bold tracking-tight text-wrap-balance">Deepening Opportunities</h1>
+    <p class="mt-4 text-teal-50/90 max-w-2xl text-lg">
+      Six places where the module structure makes change expensive. Each one is a shallow module
+      that could become deep — a simple interface over more behaviour, with the complexity moved
+      <em>inside</em> instead of spread across callers.
+    </p>
+    <div class="mt-8 flex flex-wrap gap-6 text-sm text-teal-100">
+      <div><span class="block text-2xl font-semibold text-white">81</span>Kotlin files, 2,606 lines</div>
+      <div><span class="block text-2xl font-semibold text-white">5</span>identical mapping blocks</div>
+      <div><span class="block text-2xl font-semibold text-white">3</span>modules only tests call</div>
+      <div><span class="block text-2xl font-semibold text-white">3</span>answers to "who is in a chat?"</div>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-5xl mx-auto px-6 py-12">
+
+  <!-- ============ MAP ============ -->
+  <section class="mb-14">
+    <h2 class="text-xl font-semibold mb-1">Where the friction sits</h2>
+    <p class="text-sm text-slate-500 mb-5">Current dependency shape. Red edges are the seams that leak.</p>
+    <div class="bg-white rounded-xl border border-slate-200 p-6 overflow-x-auto">
+      <pre class="mermaid">
+graph TD
+  UI["ui/screens<br/>Compose"] --> VM["ui/viewmodel<br/>Home · Chat · ConversationList"]
+  VM --> REPO["data/repository<br/>Listing · Chat · Cloudinary · User"]
+  REPO --> FS[("Firestore<br/>listings · conversations · messages")]
+  REPO --> CL[("Cloudinary")]
+  RULES[["firestore.rules"]] -.->|"re-implements<br/>access rules"| FS
+  UTIL["util<br/>ProductFilter · MessageValidator · ListingValidator"] -. "only tests call these".-> TEST(("unit tests"))
+  VM -.->|"bypasses repos:<br/>raw db.collection"| FS
+  style UTIL fill:#fee2e2,stroke:#b91c1c
+  style RULES fill:#fef3c7,stroke:#b45309
+      </pre>
+    </div>
+  </section>
+
+  <!-- ============ HOW TO READ ============ -->
+  <section class="mb-10">
+    <div class="bg-teal-50 border-l-4 border-teal-600 rounded-r-lg p-5 text-sm">
+      <p class="font-semibold text-teal-900 mb-1">Reading the before/after panels</p>
+      <p class="text-teal-900/80">
+        The top bar is the <strong>interface</strong> — what callers must know. The block below is the
+        <strong>implementation</strong>. A shallow module is a wide bar over a thin block: callers carry
+        the complexity instead. A deep module is a narrow bar over a tall block: the complexity lives
+        behind the seam. The <em>deletion test</em> applies to every candidate — would deleting it
+        concentrate complexity, or merely move it?
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ CANDIDATE 1 ============ -->
+  <article class="bg-white rounded-xl border border-slate-200 shadow-sm mb-8 overflow-hidden">
+    <div class="flex items-start justify-between gap-4 px-6 pt-6">
+      <div>
+        <p class="text-xs uppercase tracking-widest text-slate-400 mb-1">Candidate 1</p>
+        <h3 class="text-xl font-semibold">A Listing mapping module</h3>
+      </div>
+      <span class="shrink-0 text-xs font-semibold px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Strong</span>
+    </div>
+    <div class="px-6 pb-6 pt-4">
+      <p class="mono text-xs text-slate-500 mb-4">data/repository/ListingRepository.kt · data/model/Listing.kt</p>
+
+      <div class="grid md:grid-cols-2 gap-5 text-sm">
+        <div>
+          <p class="depth-label mb-1">Problem</p>
+          <p class="text-slate-600">
+            The same query→model shape repeats five times:
+            <span class="mono text-xs bg-slate-100 px-1 rounded">documents.mapNotNull { it.toObject(Listing::class.java)?.copy(id = it.id) }</span>.
+            The "is this listing live?" predicate is applied in the repository <em>and</em> again in
+            <span class="mono text-xs">HomeViewModel.loadProducts()</span>. Collection names are bare
+            strings in four files. Change "active means status==active and not expired" and you edit
+            five call sites.
+          </p>
+        </div>
+        <div>
+          <p class="depth-label mb-1">Solution</p>
+          <p class="text-slate-600">
+            One module owns the collection name, the snapshot→Listing conversion, and the active/expired
+            predicate. Callers ask for <em>live listings for a category</em>; they no longer know that
+            Firestore documents need their id patched in, or that expiry is a client-side filter.
+          </p>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-6 mt-6">
+        <div>
+          <p class="depth-label mb-2">Before — shallow, replicated</p>
+          <div class="space-y-1">
+            <div class="iface-bad px-2 py-1 text-[11px] mono">map + filter + collection name ×5</div>
+            <div class="body-bad px-2 py-3 text-[11px] text-slate-500 mono">5 lines of real logic, copied</div>
+          </div>
+        </div>
+        <div>
+          <p class="depth-label mb-2">After — deep, single seam</p>
+          <div class="space-y-1">
+            <div class="iface px-2 py-1 text-[11px] mono">liveListings(category?, cursor?)</div>
+            <div class="body px-2 py-8 text-[11px] text-slate-600 mono">query build · mapping · expiry policy · pagination</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-5 rounded-lg bg-slate-50 border border-slate-200 p-4 text-sm">
+        <p class="depth-label mb-1">Benefits</p>
+        <p class="text-slate-600">
+          <strong>Locality:</strong> the expiry rule has one home, so it can't drift between feed and
+          category views. <strong>Leverage:</strong> a new screen pays one call, not six lines.
+          <strong>Tests:</strong> the mapping and predicate become testable without a Firestore emulator —
+          today the only tested expiry code is in <span class="mono text-xs">ProductFilter</span>, which
+          production never calls.
+        </p>
+      </div>
+    </div>
+  </article>
+
+  <!-- ============ CANDIDATE 2 ============ -->
+  <article class="bg-white rounded-xl border border-slate-200 shadow-sm mb-8 overflow-hidden">
+    <div class="flex items-start justify-between gap-4 px-6 pt-6">
+      <div>
+        <p class="text-xs uppercase tracking-widest text-slate-400 mb-1">Candidate 2</p>
+        <h3 class="text-xl font-semibold">One authority for "who is in this conversation"</h3>
+      </div>
+      <span class="shrink-0 text-xs font-semibold px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Strong</span>
+    </div>
+    <div class="px-6 pb-6 pt-4">
+      <p class="mono text-xs text-slate-500 mb-4">ChatRepository.kt:50 · ConversationListViewModel.kt:27 · firestore.rules</p>
+
+      <div class="grid md:grid-cols-2 gap-5 text-sm">
+        <div>
+          <p class="depth-label mb-1">Problem</p>
+          <p class="text-slate-600">
+            Membership is encoded three incompatible ways:
+            <span class="mono text-xs">getConversationsForUser()</span> queries
+            <span class="mono text-xs">whereArrayContains("participants", …)</span> — a field the
+            <span class="mono text-xs">Conversation</span> model does not have and nothing ever writes;
+            <span class="mono text-xs">ConversationListViewModel</span> queries
+            <span class="mono text-xs">buyerId == userId</span> only, so sellers see an empty inbox;
+            and <span class="mono text-xs">firestore.rules</span> says buyer <em>or</em> seller. Three
+            answers, one question.
+          </p>
+        </div>
+        <div>
+          <p class="depth-label mb-1">Solution</p>
+          <p class="text-slate-600">
+            A conversation-access module exposes <span class="mono text-xs">belongsTo(userId)</span>,
+            <span class="mono text-xs">keyFor(product, buyer, seller)</span> and
+            <span class="mono text-xs">canDeleteForEveryone(message, userId)</span>. The repository, both
+            view models and the rules derive from it. The dead <span class="mono text-xs">participants</span>
+            query and the duplicated key builder in <span class="mono text-xs">MessageValidator</span> collapse into it.
+          </p>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-6 mt-6">
+        <div>
+          <p class="depth-label mb-2">Before — three seams, none authoritative</p>
+          <pre class="mermaid">
+graph LR
+  A["Repository<br/>participants"] --> FS[(conversations)]
+  B["VM<br/>buyerId only"] --> FS
+  C["Rules<br/>buyer OR seller"] --> FS
+  style A fill:#fee2e2,stroke:#b91c1c
+  style B fill:#fee2e2,stroke:#b91c1c
+          </pre>
+        </div>
+        <div>
+          <p class="depth-label mb-2">After — one seam, three adapters</p>
+          <pre class="mermaid">
+graph LR
+  M["ConversationAccess"] --> FS[(conversations)]
+  M --> A2["Repository"] --> FS
+  M --> B2["ViewModels"]
+  M --> C2["Rules mirror"]
+  style M fill:#ccfbf1,stroke:#0f766e
+          </pre>
+        </div>
+      </div>
+
+      <div class="mt-5 rounded-lg bg-amber-50 border border-amber-200 p-4 text-sm">
+        <p class="depth-label mb-1 text-amber-800">Why this first</p>
+        <p class="text-amber-900">
+          This is not only a structure problem — it is a live defect. A seller cannot see any of their
+          conversations today. Deepening this module fixes a broken acceptance criterion while it
+          removes the duplication.
+        </p>
+      </div>
+    </div>
+  </article>
+
+  <!-- ============ CANDIDATE 3 ============ -->
+  <article class="bg-white rounded-xl border border-slate-200 shadow-sm mb-8 overflow-hidden">
+    <div class="flex items-start justify-between gap-4 px-6 pt-6">
+      <div>
+        <p class="text-xs uppercase tracking-widest text-slate-400 mb-1">Candidate 3</p>
+        <h3 class="text-xl font-semibold">Give expiry a clock, not a locale</h3>
+      </div>
+      <span class="shrink-0 text-xs font-semibold px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">Strong</span>
+    </div>
+    <div class="px-6 pb-6 pt-4">
+      <p class="mono text-xs text-slate-500 mb-4">data/model/Listing.kt:28-38 · util/ProductFilter.kt</p>
+
+      <div class="grid md:grid-cols-2 gap-5 text-sm">
+        <div>
+          <p class="depth-label mb-1">Problem</p>
+          <p class="text-slate-600">
+            <span class="mono text-xs">isExpired()</span> parses two strings with a
+            <span class="mono text-xs">SimpleDateFormat("yyyy-MM-dd HH:mm")</span> built on
+            <span class="mono text-xs">Locale.getDefault()</span>, compares against
+            <span class="mono text-xs">Date()</span>, and swallows every exception into
+            <span class="mono text-xs">false</span> — so a malformed date silently means "never expires".
+            It is also called inside <span class="mono text-xs">filter {}</span> loops, re-parsing per
+            comparison, with no seam to inject "now" in a test.
+          </p>
+        </div>
+        <div>
+          <p class="depth-label mb-1">Solution</p>
+          <p class="text-slate-600">
+            Move the rule behind <span class="mono text-xs">ExpiryPolicy.expiresAt(listing): Instant?</span>
+            with an injected clock. The model keeps a thin
+            <span class="mono text-xs">isActive(clock)</span>. Parsing happens once, malformed data becomes
+            an explicit "unknown" the UI can surface, and every caller shares one definition of expired.
+          </p>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-6 mt-6">
+        <div>
+          <p class="depth-label mb-2">Before</p>
+          <div class="space-y-1">
+            <div class="iface-bad px-2 py-1 text-[11px] mono">isExpired() · isActive() · clock = wall time</div>
+            <div class="body-bad px-2 py-4 text-[11px] text-slate-500 mono">3-line parse, locale- and second-dependent</div>
+          </div>
+        </div>
+        <div>
+          <p class="depth-label mb-2">After</p>
+          <div class="space-y-1">
+            <div class="iface px-2 py-1 text-[11px] mono">isActive(clock)</div>
+            <div class="body px-2 py-8 text-[11px] text-slate-600 mono">parse once · Locale-safe · explicit unknown · shared by feed, category, seller</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-5 rounded-lg bg-slate-50 border border-slate-200 p-4 text-sm">
+        <p class="depth-label mb-1">Benefits</p>
+        <p class="text-slate-600">
+          Testing becomes trivial — a fixed clock makes expiry assertions deterministic instead of
+          time-of-day dependent. <strong>Locality:</strong> the "unknown date" case stops being a silent
+          <span class="mono text-xs">false</span> hidden in a <span class="mono text-xs">catch</span>.
+        </p>
+      </div>
+    </div>
+  </article>
+
+  <!-- ============ CANDIDATE 4 ============ -->
+  <article class="bg-white rounded-xl border border-slate-200 shadow-sm mb-8 overflow-hidden">
+    <div class="flex items-start justify-between gap-4 px-6 pt-6">
+      <div>
+        <p class="text-xs uppercase tracking-widest text-slate-400 mb-1">Candidate 4</p>
+        <h3 class="text-xl font-semibold">Account deletion as its own module</h3>
+      </div>
+      <span class="shrink-0 text-xs font-semibold px-3 py-1 rounded-full bg-sky-100 text-sky-800">Worth exploring</span>
+    </div>
+    <div class="px-6 pb-6 pt-4">
+      <p class="mono text-xs text-slate-500 mb-4">data/repository/UserRepository.kt:29-52 · docs/account-deletion.html</p>
+
+      <div class="grid md:grid-cols-2 gap-5 text-sm">
+        <div>
+          <p class="depth-label mb-1">Problem</p>
+          <p class="text-slate-600">
+            A profile repository owns a cross-collection cascade — it reaches past
+            <span class="mono text-xs">ListingRepository</span> into
+            <span class="mono text-xs">listings</span> and <span class="mono text-xs">stores</span> with
+            raw string collection names, deletes the user doc, then deletes the auth account last. Any
+            failure mid-way leaves a half-deleted account that the UI reports as an error with no state.
+            The published policy page promises conversations and messages are deleted too; the code never
+            touches them. Code path and promise have drifted apart.
+          </p>
+        </div>
+        <div>
+          <p class="depth-label mb-1">Solution</p>
+          <p class="text-slate-600">
+            An <span class="mono text-xs">AccountDeletion</span> module states the deletion graph in one
+            place — what is removed, in what order, what is retained — and returns a resumable outcome.
+            <span class="mono text-xs">UserRepository</span> goes back to profiles. The policy page and the
+            tests both read from the same declaration.
+          </p>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-6 mt-6">
+        <div>
+          <p class="depth-label mb-2">Before — divergent change</p>
+          <div class="space-y-1">
+            <div class="iface-bad px-2 py-2 text-[11px] mono">UserRepository: profile CRUD <em>and</em> cascade delete</div>
+            <div class="body-bad px-2 py-2 text-[11px] text-slate-500 mono">listings · stores · users · auth</div>
+          </div>
+        </div>
+        <div>
+          <p class="depth-label mb-2">After — one reason to change each</p>
+          <div class="grid grid-cols-2 gap-1">
+            <div>
+              <div class="iface px-2 py-1 text-[10px] mono">UserRepository</div>
+              <div class="body px-2 py-3 text-[10px] text-slate-600 mono">profiles</div>
+            </div>
+            <div>
+              <div class="iface px-2 py-1 text-[10px] mono">AccountDeletion</div>
+              <div class="body px-2 py-3 text-[10px] text-slate-600 mono">graph + order</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <!-- ============ CANDIDATE 5 ============ -->
+  <article class="bg-white rounded-xl border border-slate-200 shadow-sm mb-8 overflow-hidden">
+    <div class="flex items-start justify-between gap-4 px-6 pt-6">
+      <div>
+        <p class="text-xs uppercase tracking-widest text-slate-400 mb-1">Candidate 5</p>
+        <h3 class="text-xl font-semibold">Delete the test-only utility layer — or make it the seam</h3>
+      </div>
+      <span class="shrink-0 text-xs font-semibold px-3 py-1 rounded-full bg-sky-100 text-sky-800">Worth exploring</span>
+    </div>
+    <div class="px-6 pb-6 pt-4">
+      <p class="mono text-xs text-slate-500 mb-4">util/ProductFilter.kt · util/MessageValidator.kt · util/ListingValidator.kt</p>
+
+      <div class="grid md:grid-cols-2 gap-5 text-sm">
+        <div>
+          <p class="depth-label mb-1">Problem</p>
+          <p class="text-slate-600">
+            Three objects whose interface is as wide as their implementation — seven one-line
+            <span class="mono text-xs">filter {}</span> wrappers, six boolean predicates. Nothing in
+            <span class="mono text-xs">ui/</span> or <span class="mono text-xs">data/</span> calls them;
+            only the unit tests do. So the green test suite proves a layer that ships in the APK and does
+            no work, while the paths users actually hit — repositories, view models — are untested.
+          </p>
+        </div>
+        <div>
+          <p class="depth-label mb-1">Solution</p>
+          <p class="text-slate-600">
+            Either delete them and inline into the one place each rule applies, or invert the
+            dependency: make the repository and view models <em>call</em> the validators. The second keeps
+            the tests and makes the tested seam the production seam. The interface narrows to predicates;
+            the depth comes from being enforced at the boundary rather than duplicated beside it.
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-6 rounded-lg bg-slate-50 border border-slate-200 p-4 text-sm">
+        <p class="depth-label mb-1">Deletion test</p>
+        <p class="text-slate-600">
+          Deleting <span class="mono text-xs">ProductFilter</span> concentrates nothing — its logic is
+          already restated in <span class="mono text-xs">ListingRepository</span>. Deleting
+          <span class="mono text-xs">ListingValidator</span> would <em>lose</em> a rule that
+          <span class="mono text-xs">SellScreen</span> may not enforce, so it should be kept and wired,
+          not removed. Two different verdicts from the same test — which is the point of applying it.
+        </p>
+      </div>
+    </div>
+  </article>
+
+  <!-- ============ CANDIDATE 6 ============ -->
+  <article class="bg-white rounded-xl border border-slate-200 shadow-sm mb-8 overflow-hidden">
+    <div class="flex items-start justify-between gap-4 px-6 pt-6">
+      <div>
+        <p class="text-xs uppercase tracking-widest text-slate-400 mb-1">Candidate 6</p>
+        <h3 class="text-xl font-semibold">Notification preferences that reach the notification</h3>
+      </div>
+      <span class="shrink-0 text-xs font-semibold px-3 py-1 rounded-full bg-violet-100 text-violet-800">Speculative</span>
+    </div>
+    <div class="px-6 pb-6 pt-4">
+      <p class="mono text-xs text-slate-500 mb-4">data/preferences/NotificationPreferences.kt · notifications/IslaBuyMessagingService.kt · IslaBuyApp.kt</p>
+
+      <div class="grid md:grid-cols-2 gap-5 text-sm">
+        <div>
+          <p class="depth-label mb-1">Problem</p>
+          <p class="text-slate-600">
+            Four DataStore keys with getters and setters and no reader: nothing in the messaging service
+            consults <span class="mono text-xs">messageSoundsEnabled</span> before posting, and no channel
+            sets a sound at all. The module has a complete interface and an empty effect — callers pay the
+            import, users get nothing.
+          </p>
+        </div>
+        <div>
+          <p class="depth-label mb-1">Solution</p>
+          <p class="text-slate-600">
+            If per-type muting is wanted, the preference belongs <em>behind</em> the notification
+            presenter: one module decides "should this message notify, and how loud", and the service
+            asks it. Otherwise remove the module until something reads it.
+          </p>
+        </div>
+      </div>
+      <p class="mt-5 text-sm text-slate-600">
+        <strong>Why speculative:</strong> the right fix depends on whether configurable ringtones are
+        still in scope. Deciding that is a product call, not an architectural one — so this is last.
+      </p>
+    </div>
+  </article>
+
+  <!-- ============ TOP RECOMMENDATION ============ -->
+  <section class="bg-slate-900 text-slate-100 rounded-xl p-8 mb-10">
+    <p class="text-xs uppercase tracking-[0.2em] text-teal-300 mb-2">Top recommendation</p>
+    <h2 class="text-2xl font-semibold mb-3">Start with Candidate 2 — one authority for conversation membership</h2>
+    <p class="text-slate-300 text-sm leading-relaxed max-w-3xl">
+      It is the only candidate that pays twice. Structurally it retires three competing encodings of one
+      rule — a query on a field that does not exist, a buyer-only filter, and a rules clause — and gives
+      the chat feature a single seam to test through. Practically it fixes a seller who currently opens
+      an empty Messages screen, which no amount of further feature work will reveal because every test
+      passes.
+    </p>
+    <p class="text-slate-400 text-sm mt-4">
+      Follow it with Candidate 1: once the conversation module shows the shape of a good seam, the
+      listing mapping module follows the same pattern and removes five copies of the same three lines.
+      Candidates 3–6 are cheaper afterwards, because 1 and 2 establish where such logic is supposed to live.
+    </p>
+  </section>
+
+  <footer class="text-xs text-slate-400 border-t border-slate-200 pt-6">
+    <p>
+      Reviewed against <span class="mono">HEAD</span> of <span class="mono">bernavicg1-beep/IslaBuy</span> ·
+      81 Kotlin files / 2,606 lines in <span class="mono">app/src/main/java</span> ·
+      no <span class="mono">GLOSSARY.md</span> and no ADRs exist, so domain terms above are the codebase's own
+      (<em>listing</em>, <em>conversation</em>, <em>storefront</em>, <em>seller</em>, <em>buyer</em>).
+    </p>
+  </footer>
+</main>
+</body>
+</html>

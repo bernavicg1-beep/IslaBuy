@@ -1,0 +1,48 @@
+name: Bootstrap source
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'islabuy-project.zip'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  unpack:
+    if: ${{ !contains(github.event.head_commit.message || '', '[skip-unpack]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Remove leftovers from the earlier manual upload
+        run: |
+          # These came from files being uploaded one by one into the wrong paths.
+          rm -f app/src/main/Conversation.kt
+          rm -rf app/src/main/res/mipmap-anydpi-v26/mipmap-anydpi-v26
+
+      - name: Unpack project
+        run: |
+          if [ ! -f islabuy-project.zip ]; then
+            echo "No islabuy-project.zip in the repo, nothing to unpack."
+            exit 0
+          fi
+          unzip -o islabuy-project.zip -d .
+          rm -f islabuy-project.zip
+
+      - name: Commit unpacked source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          chmod +x gradlew || true
+          git add -A
+          git add -f app/google-services.json
+          git update-index --chmod=+x gradlew || true
+          if git diff --cached --quiet; then
+            echo "Nothing to commit"
+          else
+            git commit -m "Import IslaBuy source [skip-unpack]"
+            git push
+          fi
