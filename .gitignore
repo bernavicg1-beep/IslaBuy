@@ -32,3 +32,6 @@ captures/
 .cxx/
 *.keystore
 *.keystore.base64
+
+# keystore split parts (secrets)
+keystore_part*.txt

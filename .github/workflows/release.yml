@@ -31,9 +31,15 @@ jobs:
       - name: Decode Keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_BASE64_1: ${{ secrets.KEYSTORE_BASE64_1 }}
+          KEYSTORE_BASE64_2: ${{ secrets.KEYSTORE_BASE64_2 }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: |
           set -euo pipefail
+          # Phone clipboards truncate long values; join the two-part secrets when set.
+          if [ -n "${KEYSTORE_BASE64_1:-}" ] || [ -n "${KEYSTORE_BASE64_2:-}" ]; then
+            KEYSTORE_BASE64="${KEYSTORE_BASE64_1:-}${KEYSTORE_BASE64_2:-}"
+          fi
           # Secrets pasted from a phone often carry stray spaces or CRLF; strip all whitespace.
           printf '%s' "$KEYSTORE_BASE64" | tr -d '[:space:]' > /tmp/ks.b64
           if [ ! -s /tmp/ks.b64 ]; then
