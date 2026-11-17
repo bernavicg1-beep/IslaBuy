@@ -36,9 +36,8 @@ fun Modifier.threeD(
     tiltY: Float = 0f,
     baseColor: Color? = null
 ): Modifier {
-    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
     val color = baseColor ?: MaterialTheme.colorScheme.primary
-    val shadowColor = if (isDark) Color.Black else Color(0x55000000)
+    val shadowColor = Color(0x55000000)
     val shape = RoundedCornerShape(cornerRadius)
     return this
         .graphicsLayer {
@@ -50,10 +49,7 @@ fun Modifier.threeD(
         .shadow(elevation = elevation, shape = shape, ambientColor = shadowColor, spotColor = shadowColor)
         .background(
             brush = Brush.verticalGradient(
-                colors = if (isDark) listOf(
-                    color.copy(alpha = 0.9f),
-                    color.copy(alpha = 0.6f)
-                ) else listOf(
+                colors = listOf(
                     color.copy(alpha = 0.95f),
                     color.copy(alpha = 0.75f)
                 )
