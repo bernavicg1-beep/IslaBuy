@@ -34,15 +34,17 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: |
           set -euo pipefail
-          if [ -z "${KEYSTORE_BASE64// /}" ]; then
+          # Secrets pasted from a phone often carry stray spaces or CRLF; strip all whitespace.
+          printf '%s' "$KEYSTORE_BASE64" | tr -d '[:space:]' > /tmp/ks.b64
+          if [ ! -s /tmp/ks.b64 ]; then
             echo "::error::The KEYSTORE_BASE64 secret is empty."
             exit 1
           fi
-          # Secrets pasted from a phone often carry stray spaces or CRLF; strip all whitespace.
-          printf '%s' "$KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > app/release.keystore || {
-            echo "::error::KEYSTORE_BASE64 is not valid base64. Paste the whole content of islabuy-release.keystore.base64 (one line, 3684 characters, starting with MIIKxgIBAzCCCnAG) and nothing else."
+          if ! base64 -d /tmp/ks.b64 > app/release.keystore 2>/dev/null; then
+            echo "::error::KEYSTORE_BASE64 is not valid base64. It should be one line of 3684 characters starting with MIIKxgIBAzCCCnAG."
+            python3 -c "import string;b=open('/tmp/ks.b64',encoding='utf-8',errors='replace').read();ok=set(string.ascii_letters+string.digits+'+/=');bad=sorted({c for c in b if c not in ok});print('length:',len(b));print('starts with MII:',b.startswith('MII'));print('outside base64 alphabet:',(' '.join(repr(c) for c in bad) if bad else '(none)'))"
             exit 1
-          }
+          fi
           keytool -list -keystore app/release.keystore -storepass "$KEYSTORE_PASSWORD" > /dev/null || {
             echo "::error::The decoded keystore does not open with the KEYSTORE_PASSWORD secret."
             exit 1
