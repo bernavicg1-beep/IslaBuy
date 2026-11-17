@@ -9,7 +9,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.islabuy.camiguin.data.repository.UserRepository
+import androidx.compose.foundation.background
 import com.islabuy.camiguin.ui.components.IslaProduct
+import com.islabuy.camiguin.ui.theme.NavyBlue
 import com.islabuy.camiguin.ui.components.sampleProducts
 import com.islabuy.camiguin.ui.screens.*
 
@@ -39,19 +41,21 @@ fun AppNavigation() {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                        .background(NavyBlue)
+                        .statusBarsPadding()
+                        .padding(horizontal = 8.dp, vertical = 10.dp),
                     verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                 ) {
                     IconButton(onClick = { goBack() }) {
-                        Text("←", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        Text("←", color = Color.White, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     }
                     Text(
                         text = screenTitle(currentScreen),
+                        color = Color.White,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
-                HorizontalDivider()
             }
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 when (currentScreen) {
