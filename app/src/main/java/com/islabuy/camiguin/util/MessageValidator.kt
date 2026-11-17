@@ -13,17 +13,5 @@ object MessageValidator {
         return userId in participants
     }
 
-    fun conversationKey(productId: String, buyerId: String, sellerId: String): String {
-        return "$productId:$buyerId:$sellerId"
-    }
-
-    fun isUniqueConversation(
-        existingKeys: Set<String>,
-        productId: String,
-        buyerId: String,
-        sellerId: String
-    ): Boolean {
-        val key = conversationKey(productId, buyerId, sellerId)
-        return key !in existingKeys
-    }
+    // Conversation identity (key / uniqueness) lives in ConversationAccess.
 }

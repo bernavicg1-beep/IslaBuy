@@ -16,6 +16,20 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
+    // Membership. This is the rules-side statement of ConversationAccess.isMember().
+    // A participant is the conversation's buyer or its seller — nobody else.
+    // Change one, change the other.
+    function isConversationParticipant(conversation) {
+      return isSignedIn() &&
+        (request.auth.uid == conversation.buyerId || request.auth.uid == conversation.sellerId);
+    }
+
+    // A message is readable/updatable by the two people on the conversation it belongs to.
+    function isMessageParty(message) {
+      return isSignedIn() &&
+        (request.auth.uid == message.senderId || request.auth.uid == message.receiverId);
+    }
+
     // users collection
     match /users/{userId} {
       allow read: if isSignedIn();
@@ -51,23 +65,18 @@ service cloud.firestore {
 
     // conversations collection
     match /conversations/{conversationId} {
-      allow read: if isSignedIn() &&
-        (request.auth.uid == resource.data.buyerId || request.auth.uid == resource.data.sellerId);
-      allow create: if isSignedIn() &&
-        (request.auth.uid == request.resource.data.buyerId || request.auth.uid == request.resource.data.sellerId);
-      allow update: if isSignedIn() &&
-        (request.auth.uid == resource.data.buyerId || request.auth.uid == resource.data.sellerId);
+      allow read: if isConversationParticipant(resource.data);
+      allow create: if isConversationParticipant(request.resource.data);
+      allow update: if isConversationParticipant(resource.data);
       allow delete: if isAdmin();
     }
 
     // messages collection
     match /messages/{messageId} {
-      allow read: if isSignedIn() &&
-        (request.auth.uid == resource.data.senderId || request.auth.uid == resource.data.receiverId);
+      allow read: if isMessageParty(resource.data);
       allow create: if isSignedIn() &&
         request.resource.data.senderId == request.auth.uid;
-      allow update: if isSignedIn() &&
-        (request.auth.uid == resource.data.senderId || request.auth.uid == resource.data.receiverId) &&
+      allow update: if isMessageParty(resource.data) &&
         // Only allow deletion-related updates
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deletedFor', 'deletedForEveryone', 'status']);
       allow delete: if isAdmin();

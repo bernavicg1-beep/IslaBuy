@@ -2,8 +2,13 @@ package com.islabuy.camiguin.data.repository
 
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.QuerySnapshot
 import com.islabuy.camiguin.data.model.Conversation
 import com.islabuy.camiguin.data.model.Message
+import com.islabuy.camiguin.util.ConversationAccess
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
 class ChatRepository(private val db: FirebaseFirestore = FirebaseFirestore.getInstance()) {
@@ -47,9 +52,48 @@ class ChatRepository(private val db: FirebaseFirestore = FirebaseFirestore.getIn
         return newConv.copy(conversationId = doc.id)
     }
 
-    fun getConversationsForUser(userId: String) = conversations
-        .whereArrayContains("participants", userId) // or use buyerId/sellerId queries
-        .orderBy("lastMessageAt", Query.Direction.DESCENDING)
+    /**
+     * Every conversation [userId] takes part in, whether they are the buyer or the seller.
+     *
+     * Two equality listeners are merged here so callers never need to know which side of the
+     * conversation the user sits on. Ordering is applied locally, so this needs no composite
+     * index on `sellerId` + `lastMessageAt`.
+     */
+    fun conversationsFor(userId: String): Flow<List<Conversation>> = callbackFlow {
+        var asBuyer: List<Conversation> = emptyList()
+        var asSeller: List<Conversation> = emptyList()
+
+        fun publish() {
+            val merged = (asBuyer + asSeller)
+                .distinctBy { it.conversationId }
+                .filter { ConversationAccess.isMember(it, userId) }
+                .sortedByDescending { it.lastMessageAt }
+            trySend(merged)
+        }
+
+        val buyerListener = conversations
+            .whereEqualTo("buyerId", userId)
+            .addSnapshotListener { snapshot, error ->
+                if (error == null && snapshot != null) {
+                    asBuyer = snapshot.toConversations()
+                    publish()
+                }
+            }
+
+        val sellerListener = conversations
+            .whereEqualTo("sellerId", userId)
+            .addSnapshotListener { snapshot, error ->
+                if (error == null && snapshot != null) {
+                    asSeller = snapshot.toConversations()
+                    publish()
+                }
+            }
+
+        awaitClose {
+            buyerListener.remove()
+            sellerListener.remove()
+        }
+    }
 
     fun getMessages(conversationId: String) = messages
         .whereEqualTo("conversationId", conversationId)
@@ -86,3 +130,8 @@ class ChatRepository(private val db: FirebaseFirestore = FirebaseFirestore.getIn
         conversations.document(conversationId).update("unreadCounts.$userId", 0).await()
     }
 }
+
+private fun QuerySnapshot.toConversations(): List<Conversation> =
+    documents.mapNotNull { doc ->
+        doc.toObject(Conversation::class.java)?.copy(conversationId = doc.id)
+    }

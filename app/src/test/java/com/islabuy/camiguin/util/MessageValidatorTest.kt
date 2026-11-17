@@ -42,21 +42,5 @@ class MessageValidatorTest {
         assertFalse(MessageValidator.canDeleteForMe("user3", listOf("user1", "user2")))
     }
 
-    @Test
-    fun `conversation key format`() {
-        assertEquals("p1:b1:s1", MessageValidator.conversationKey("p1", "b1", "s1"))
-    }
-
-    @Test
-    fun `unique conversation check`() {
-        val existing = setOf("p1:b1:s1", "p2:b1:s1")
-        assertTrue(MessageValidator.isUniqueConversation(existing, "p3", "b1", "s1"))
-        assertFalse(MessageValidator.isUniqueConversation(existing, "p1", "b1", "s1"))
-    }
-
-    @Test
-    fun `same product different buyer is unique`() {
-        val existing = setOf("p1:b1:s1")
-        assertTrue(MessageValidator.isUniqueConversation(existing, "p1", "b2", "s1"))
-    }
+    // Conversation identity (key / uniqueness) is covered by ConversationAccessTest.
 }

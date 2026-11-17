@@ -41,7 +41,7 @@ fun MessagesScreen(navController: NavController? = null) {
             }
         } else if (conversations.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No conversations yet. Start chatting with a seller!")
+                Text("No conversations yet.")
             }
         } else {
             LazyColumn {
