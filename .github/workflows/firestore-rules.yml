@@ -25,18 +25,11 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Start Firestore Emulator
-        run: |
-          firebase emulators:start --only firestore --project demo-islabuy &
-          sleep 10
-
-      - name: Compile Security Rules
-        run: firebase deploy --only firestore:rules --project demo-islabuy --token ${{ secrets.FIREBASE_TOKEN }} || echo "Deploy skipped (no token)"
-
-      - name: Run Security Tests
-        run: python3 scripts/test-firestore-rules.py
-        env:
-          FIRESTORE_EMULATOR_HOST: localhost:8080
+      - name: Run Security Rules Tests
+        # emulators:exec compiles firestore.rules on startup (a syntax error
+        # fails this step) and exposes FIRESTORE_EMULATOR_HOST /
+        # FIREBASE_AUTH_EMULATOR_HOST to the test script.
+        run: firebase emulators:exec --only firestore,auth --project demo-islabuy "python3 scripts/test-firestore-rules.py"
 
       - name: Stop Emulator
         if: always()
