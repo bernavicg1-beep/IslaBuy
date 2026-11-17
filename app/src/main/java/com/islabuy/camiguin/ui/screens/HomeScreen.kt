@@ -91,7 +91,8 @@ fun HomeScreen(padding: PaddingValues) {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun NewsTicker(messages: List<String>) {
-    val text = messages.joinToString("   •   ")
+    // Repeat so the text always overflows and keeps scrolling.
+    val text = (messages + messages + messages).joinToString("   •   ")
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -105,7 +106,7 @@ fun NewsTicker(messages: List<String>) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 10.dp)
-                .basicMarquee(),
+                .basicMarquee(iterations = Int.MAX_VALUE, initialDelayMillis = 0),
             maxLines = 1,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold

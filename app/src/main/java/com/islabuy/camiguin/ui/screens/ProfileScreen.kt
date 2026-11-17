@@ -49,13 +49,20 @@ fun ProfileScreen(navController: NavController) {
                     Text("Admin Panel")
                 }
             }
-
-            Button(
-                onClick = { navController.navigate("settings") },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Settings")
+        } ?: run {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Not signed in", style = MaterialTheme.typography.bodyLarge)
+                    Text("Sign in to view your profile.", style = MaterialTheme.typography.bodyMedium)
+                }
             }
+        }
+
+        Button(
+            onClick = { navController.navigate("settings") },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Settings")
         }
     }
 }
