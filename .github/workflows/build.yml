@@ -48,13 +48,27 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # `secrets` is not available in a step-level `if:`, so the check lives inside the script.
       - name: Decode Keystore
-        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/release.keystore
+          set -euo pipefail
+          if [ -z "${KEYSTORE_BASE64// /}" ]; then
+            echo "::error::The KEYSTORE_BASE64 secret is empty, so a signed release build cannot be produced."
+            exit 1
+          fi
+          printf '%s' "$KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > app/release.keystore || {
+            echo "::error::KEYSTORE_BASE64 is not valid base64. Paste the whole content of islabuy-release.keystore.base64 (one line, 3684 characters, starting with MIIKxgIBAzCCCnAG) and nothing else."
+            exit 1
+          }
+          keytool -list -keystore app/release.keystore -storepass "$KEYSTORE_PASSWORD" > /dev/null || {
+            echo "::error::The decoded keystore does not open with the KEYSTORE_PASSWORD secret."
+            exit 1
+          }
 
       - name: Build Release APK & AAB
-        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
@@ -64,7 +78,6 @@ jobs:
           ./gradlew assembleRelease bundleRelease
 
       - name: Upload Release Artifacts
-        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: release-artifacts
