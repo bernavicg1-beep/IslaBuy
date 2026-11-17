@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1076571931818",
+    "project_id": "islabuy-3c2b4",
+    "storage_bucket": "islabuy-3c2b4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1076571931818:android:2084cabb65986a1ad6bcd3",
+        "android_client_info": {
+          "package_name": "com.islabuy.camiguin"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1076571931818-pqs6jdbcuiopn3ipaqdjrt41nt7gm7dl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBNXH0rgECF-1vdhFp6zCY5W2L6a-w6oOQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1076571931818-pqs6jdbcuiopn3ipaqdjrt41nt7gm7dl.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

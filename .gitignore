@@ -1,0 +1,34 @@
+# Gradle
+.gradle/
+build/
+app/build/
+*.iml
+.idea/
+local.properties
+
+# Signing
+*.keystore
+*.jks
+release.keystore
+
+# Secrets
+.env
+.env.local
+google-services.json
+serviceAccountKey.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Cloudinary
+# Never commit API secrets
+
+# Android
+*.apk
+*.aab
+captures/
+.externalNativeBuild/
+.cxx/
+*.keystore
+*.keystore.base64
