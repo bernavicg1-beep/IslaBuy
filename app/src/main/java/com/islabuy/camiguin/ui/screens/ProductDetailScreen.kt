@@ -9,7 +9,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import com.islabuy.camiguin.R
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.islabuy.camiguin.data.model.Listing
@@ -112,7 +114,7 @@ fun ProductDetailScreen(id: String?) {
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Get Directions")
+                        Text(stringResource(R.string.get_directions))
                     }
                 }
 
@@ -148,7 +150,7 @@ fun ProductDetailScreen(id: String?) {
         var reportReason by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { showReportDialog = false },
-            title = { Text("Report Product") },
+                                title = { Text(stringResource(R.string.report_product)) },
             text = {
                 Column {
                     Text("Why are you reporting this product?")

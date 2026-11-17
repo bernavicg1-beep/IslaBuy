@@ -9,6 +9,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.res.stringResource
+import com.islabuy.camiguin.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -98,7 +100,7 @@ fun PickupLocationSelector(
                     }
 
                     // Tap to place / move the pin.
-                    setOnTouchListener { _, event ->
+                    setOnTouchListener { view, event ->
                         if (event.action == android.view.MotionEvent.ACTION_UP) {
                             val gp = projection.fromPixels(event.x.toInt(), event.y.toInt()) as? GeoPoint
                             gp?.let {
@@ -114,9 +116,16 @@ fun PickupLocationSelector(
                                 onLocationSelected(it.latitude, it.longitude)
                             }
                         }
+                        if (event.action == android.view.MotionEvent.ACTION_UP) {
+                            view.performClick()
+                        }
                         false
                     }
                 }
+            },
+            onRelease = { mv ->
+                myLocationOverlay?.disableMyLocation()
+                mv.onDetach()
             },
             modifier = Modifier.weight(1f)
         )
@@ -152,7 +161,7 @@ fun PickupLocationSelector(
 
         // OSM Attribution (required)
         Text(
-            text = "© OpenStreetMap contributors",
+            text = stringResource(R.string.osm_attribution),
             style = MaterialTheme.typography.labelSmall,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
         )

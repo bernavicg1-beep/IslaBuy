@@ -1,15 +1,19 @@
 package com.islabuy.camiguin.ui.screens
 
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.islabuy.camiguin.R
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.islabuy.camiguin.data.model.Message
 import com.islabuy.camiguin.ui.viewmodel.ChatViewModel
@@ -21,7 +25,6 @@ fun ChatScreen(conversationId: String?) {
     val isSending by viewModel.isSending.collectAsState()
     var messageText by remember { mutableStateOf("") }
     var deleteTarget by remember { mutableStateOf<String?>(null) }
-    var deleteForEveryone by remember { mutableStateOf(false) }
 
     LaunchedEffect(conversationId) {
         conversationId?.let { viewModel.loadMessages(it) }
@@ -60,13 +63,13 @@ fun ChatScreen(conversationId: String?) {
                     TextButton(onClick = {
                         viewModel.deleteForMe(msgId, "current_user")
                         deleteTarget = null
-                    }) { Text("Delete for Me") }
+                    }) { Text(stringResource(R.string.delete_for_me)) }
                 },
                 dismissButton = {
                     TextButton(onClick = {
                         viewModel.deleteForEveryone(msgId, "current_user")
                         deleteTarget = null
-                    }) { Text("Delete for Everyone") }
+                    }) { Text(stringResource(R.string.delete_for_everyone)) }
                 }
             )
         }
@@ -98,7 +101,7 @@ fun ChatScreen(conversationId: String?) {
                 if (isSending) {
                     CircularProgressIndicator(modifier = Modifier.size(20.dp))
                 } else {
-                    Icon(Icons.Default.Send, contentDescription = "Send")
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send")
                 }
             }
         }
@@ -111,7 +114,11 @@ private fun MessageBubble(message: Message, isOwn: Boolean, onLongPress: () -> U
     val bgColor = if (isOwn) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
 
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .pointerInput(Unit) {
+                detectTapGestures(onLongPress = { onLongPress() })
+            },
         horizontalAlignment = alignment
     ) {
         if (message.deletedForEveryone) {

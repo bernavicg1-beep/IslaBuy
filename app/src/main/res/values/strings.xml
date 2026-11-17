@@ -1,11 +1,9 @@
 <resources>
     <string name="app_name">IslaBuy — Camiguin Edition</string>
-    <string name="tagline">Buy Local. Sell Local. Support Every Islander.</string>
     <string name="welcome_ticker">Welcome to IslaBuy! Buy Local. Sell Local. Support Every Islander.</string>
     <string name="osm_attribution">© OpenStreetMap contributors</string>
     <string name="get_directions">Get Directions</string>
     <string name="report_product">Report Product</string>
     <string name="delete_for_me">Delete for Me</string>
     <string name="delete_for_everyone">Delete for Everyone</string>
-    <string name="account_deletion">Account Deletion</string>
 </resources>

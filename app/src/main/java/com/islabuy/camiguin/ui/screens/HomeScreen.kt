@@ -11,8 +11,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.islabuy.camiguin.R
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.islabuy.camiguin.data.model.Listing
@@ -25,7 +27,8 @@ fun HomeScreen(padding: PaddingValues) {
     val isLoading by viewModel.isLoading.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
 
-    var announcements by remember { mutableStateOf(listOf("Welcome to IslaBuy! Buy Local. Sell Local. Support Every Islander.")) }
+    val welcomeText = stringResource(R.string.welcome_ticker)
+    var announcements by remember { mutableStateOf(listOf(welcomeText)) }
 
     Column(modifier = Modifier.padding(padding)) {
         // Running news ticker
